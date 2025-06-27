@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { X, Save, Calendar, Clock, MapPin, Users, FileText } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface HearingSchedulerProps {
   onClose: () => void;
@@ -32,6 +33,9 @@ export default function HearingScheduler({ onClose, onSuccess }: HearingSchedule
   const [success, setSuccess] = useState(false);
   const [cases, setCases] = useState<Case[]>([]);
   const [selectedCase, setSelectedCase] = useState<string>('');
+  const { data: session } = useSession();
+  const [testEmailStatus, setTestEmailStatus] = useState<string | null>(null);
+  const [testEmailLoading, setTestEmailLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     caseId: '',
@@ -94,6 +98,34 @@ export default function HearingScheduler({ onClose, onSuccess }: HearingSchedule
       setError(error instanceof Error ? error.message : 'Failed to schedule hearing');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    setTestEmailLoading(true);
+    setTestEmailStatus(null);
+    try {
+      const res = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: session?.user?.email || 'test@example.com',
+          subject: 'Test Email',
+          html: '<p>This is a <b>test email</b> from Legal Case Manager.</p>',
+          text: 'This is a test email from Legal Case Manager.',
+          type: 'custom',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTestEmailStatus('Test email sent successfully!');
+      } else {
+        setTestEmailStatus(data.error || 'Failed to send test email.');
+      }
+    } catch (err) {
+      setTestEmailStatus('Failed to send test email.');
+    } finally {
+      setTestEmailLoading(false);
     }
   };
 
@@ -284,6 +316,15 @@ export default function HearingScheduler({ onClose, onSuccess }: HearingSchedule
               </Button>
             </div>
           </form>
+          {/* Test Email Button */}
+          <div className="mt-6 flex flex-col items-center">
+            <Button type="button" variant="outline" onClick={handleTestEmail} disabled={testEmailLoading}>
+              {testEmailLoading ? 'Sending Test Email...' : 'Send Test Email'}
+            </Button>
+            {testEmailStatus && (
+              <div className={`mt-2 text-sm ${testEmailStatus.includes('success') ? 'text-green-600' : 'text-red-600'}`}>{testEmailStatus}</div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

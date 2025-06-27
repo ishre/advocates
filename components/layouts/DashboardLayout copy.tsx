@@ -251,11 +251,37 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
 
-    <div className="min-h-screen ">
+    <div className="min-h-screen bg-gray-50">
       
+      {/* Header */}
       
+      <SidebarProvider>
+        <AppSidebar />
+      </SidebarProvider>
 
+      {/* Main Content with Sidebar */}
       <div className="flex">
+        {/* Sidebar */}
+        <Sidebar
+          stats={stats}
+          systemStatus={systemStatus}
+          onNewCase={() => setShowNewCaseForm(true)}
+          onNewClient={() => setShowNewClientForm(true)}
+          onScheduleHearing={() => setShowHearingScheduler(true)}
+          onUploadDocument={() => setShowDocumentUpload(true)}
+          onCreateSampleData={handleCreateSampleData}
+          onBackup={handleBackup}
+          onDownloadBackup={handleDownloadBackup}
+          onRestore={handleRestore}
+          onRefresh={handleRefresh}
+          availableBackups={availableBackups}
+          backupStatus={backupStatus}
+          sampleDataStatus={sampleDataStatus}
+          session={session}
+          onSignOut={signOut}
+        />
+
+        {/* Main Content */}
         <main className="flex-1 p-6">
           {children}
         </main>

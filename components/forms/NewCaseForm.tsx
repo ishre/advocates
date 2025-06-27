@@ -52,7 +52,21 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
     name: '',
     email: '',
     phone: '',
-    address: '',
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: '',
+    },
+    emergencyContact: {
+      name: '',
+      relationship: '',
+      phone: '',
+      email: '',
+    },
+    clientType: 'individual',
+    status: 'active',
   });
 
   // Load clients on component mount
@@ -78,6 +92,13 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
     setError('');
 
     try {
+      // Find the selected client details
+      const client = clients.find((c) => c._id === selectedClient);
+      if (!client) {
+        setError('Please select a client.');
+        setLoading(false);
+        return;
+      }
       const response = await fetch('/api/cases', {
         method: 'POST',
         headers: {
@@ -86,6 +107,9 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
         body: JSON.stringify({
           ...formData,
           clientId: selectedClient,
+          clientName: client.name,
+          clientEmail: client.email,
+          clientPhone: client.phone,
           fees: {
             totalAmount: formData.totalAmount,
             paidAmount: 0,
@@ -131,7 +155,7 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
         setClients([...clients, newClient.client]);
         setSelectedClient(newClient.client._id);
         setShowNewClientForm(false);
-        setNewClientData({ name: '', email: '', phone: '', address: '' });
+        setNewClientData({ name: '', email: '', phone: '', address: { street: '', city: '', state: '', zipCode: '', country: '' }, emergencyContact: { name: '', relationship: '', phone: '', email: '' }, clientType: 'individual', status: 'active' });
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to create client');
@@ -331,10 +355,109 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
                         <Label htmlFor="clientAddress">Address</Label>
                         <Input
                           id="clientAddress"
-                          value={newClientData.address}
-                          onChange={(e) => setNewClientData({ ...newClientData, address: e.target.value })}
-                          placeholder="Client address"
+                          value={newClientData.address.street}
+                          onChange={(e) => setNewClientData({ ...newClientData, address: { ...newClientData.address, street: e.target.value } })}
+                          placeholder="Street"
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientCity">City</Label>
+                        <Input
+                          id="clientCity"
+                          value={newClientData.address.city}
+                          onChange={(e) => setNewClientData({ ...newClientData, address: { ...newClientData.address, city: e.target.value } })}
+                          placeholder="City"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientState">State</Label>
+                        <Input
+                          id="clientState"
+                          value={newClientData.address.state}
+                          onChange={(e) => setNewClientData({ ...newClientData, address: { ...newClientData.address, state: e.target.value } })}
+                          placeholder="State"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientZipCode">Zip Code</Label>
+                        <Input
+                          id="clientZipCode"
+                          value={newClientData.address.zipCode}
+                          onChange={(e) => setNewClientData({ ...newClientData, address: { ...newClientData.address, zipCode: e.target.value } })}
+                          placeholder="Zip Code"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientCountry">Country</Label>
+                        <Input
+                          id="clientCountry"
+                          value={newClientData.address.country}
+                          onChange={(e) => setNewClientData({ ...newClientData, address: { ...newClientData.address, country: e.target.value } })}
+                          placeholder="Country"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientEmergencyContactName">Emergency Contact Name</Label>
+                        <Input
+                          id="clientEmergencyContactName"
+                          value={newClientData.emergencyContact.name}
+                          onChange={(e) => setNewClientData({ ...newClientData, emergencyContact: { ...newClientData.emergencyContact, name: e.target.value } })}
+                          placeholder="Emergency Contact Name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientEmergencyContactRelationship">Emergency Contact Relationship</Label>
+                        <Input
+                          id="clientEmergencyContactRelationship"
+                          value={newClientData.emergencyContact.relationship}
+                          onChange={(e) => setNewClientData({ ...newClientData, emergencyContact: { ...newClientData.emergencyContact, relationship: e.target.value } })}
+                          placeholder="Emergency Contact Relationship"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientEmergencyContactPhone">Emergency Contact Phone</Label>
+                        <Input
+                          id="clientEmergencyContactPhone"
+                          value={newClientData.emergencyContact.phone}
+                          onChange={(e) => setNewClientData({ ...newClientData, emergencyContact: { ...newClientData.emergencyContact, phone: e.target.value } })}
+                          placeholder="+1 (555) 123-4567"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientEmergencyContactEmail">Emergency Contact Email</Label>
+                        <Input
+                          id="clientEmergencyContactEmail"
+                          type="email"
+                          value={newClientData.emergencyContact.email}
+                          onChange={(e) => setNewClientData({ ...newClientData, emergencyContact: { ...newClientData.emergencyContact, email: e.target.value } })}
+                          placeholder="emergency@example.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientType">Client Type</Label>
+                        <Select value={newClientData.clientType} onValueChange={(value) => setNewClientData({ ...newClientData, clientType: value })}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="individual">Individual</SelectItem>
+                            <SelectItem value="corporation">Corporation</SelectItem>
+                            <SelectItem value="government">Government</SelectItem>
+                            <SelectItem value="non-profit">Non-Profit</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="clientStatus">Client Status</Label>
+                        <Select value={newClientData.status} onValueChange={(value) => setNewClientData({ ...newClientData, status: value })}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="md:col-span-2">
                         <Button type="submit" disabled={loading}>

@@ -263,7 +263,7 @@ export default async function HomePage() {
                       <li key={feature} className="flex items-center">
                         <Check className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
                         <span className="text-gray-700">{feature}</span>
-                      </li>
+          </li>
                     ))}
                   </ul>
                   <Link href={plan.name === 'Enterprise' ? '/contact' : '/auth/signup'}>

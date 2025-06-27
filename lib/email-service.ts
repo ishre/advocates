@@ -32,9 +32,11 @@ export interface EmailData {
 
 export class EmailService {
   private transporter: nodemailer.Transporter;
+  private fromAddress: string;
 
   constructor(config: EmailConfig) {
-    this.transporter = nodemailer.createTransporter(config);
+    this.transporter = nodemailer.createTransport(config);
+    this.fromAddress = config.auth.user;
   }
 
   // Test email connection
@@ -52,7 +54,7 @@ export class EmailService {
   async sendEmail(emailData: EmailData): Promise<boolean> {
     try {
       const mailOptions = {
-        from: this.transporter.options.auth?.user,
+        from: this.fromAddress,
         to: Array.isArray(emailData.to) ? emailData.to.join(', ') : emailData.to,
         cc: emailData.cc ? (Array.isArray(emailData.cc) ? emailData.cc.join(', ') : emailData.cc) : undefined,
         bcc: emailData.bcc ? (Array.isArray(emailData.bcc) ? emailData.bcc.join(', ') : emailData.bcc) : undefined,

@@ -23,14 +23,23 @@ export default function NewClientForm({ onClose, onSuccess }: NewClientFormProps
     name: '',
     email: '',
     phone: '',
-    address: '',
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: '',
+    },
     dateOfBirth: '',
     occupation: '',
     emergencyContact: {
       name: '',
       relationship: '',
       phone: '',
+      email: '',
     },
+    clientType: 'individual',
+    status: 'active',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -163,23 +172,92 @@ export default function NewClientForm({ onClose, onSuccess }: NewClientFormProps
                   placeholder="Software Engineer"
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="clientType">Client Type</Label>
+                <select
+                  id="clientType"
+                  value={formData.clientType}
+                  onChange={(e) => setFormData({ ...formData, clientType: e.target.value })}
+                  className="w-full border rounded px-2 py-1"
+                >
+                  <option value="individual">Individual</option>
+                  <option value="corporate">Corporate</option>
+                  <option value="government">Government</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <select
+                  id="status"
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="w-full border rounded px-2 py-1"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="prospect">Prospect</option>
+                  <option value="former">Former</option>
+                </select>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Enter full address"
-                rows={3}
-              />
+              <Label className="text-sm font-medium">Address</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="street">Street</Label>
+                  <Input
+                    id="street"
+                    value={formData.address.street}
+                    onChange={(e) => setFormData({ ...formData, address: { ...formData.address, street: e.target.value } })}
+                    placeholder="123 Main St"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={formData.address.city}
+                    onChange={(e) => setFormData({ ...formData, address: { ...formData.address, city: e.target.value } })}
+                    placeholder="City"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    value={formData.address.state}
+                    onChange={(e) => setFormData({ ...formData, address: { ...formData.address, state: e.target.value } })}
+                    placeholder="State"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="zipCode">Zip Code</Label>
+                  <Input
+                    id="zipCode"
+                    value={formData.address.zipCode}
+                    onChange={(e) => setFormData({ ...formData, address: { ...formData.address, zipCode: e.target.value } })}
+                    placeholder="Zip Code"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Input
+                    id="country"
+                    value={formData.address.country}
+                    onChange={(e) => setFormData({ ...formData, address: { ...formData.address, country: e.target.value } })}
+                    placeholder="Country"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Emergency Contact */}
             <div className="space-y-4">
               <Label className="text-sm font-medium">Emergency Contact</Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="emergencyName">Name</Label>
                   <Input
@@ -192,7 +270,6 @@ export default function NewClientForm({ onClose, onSuccess }: NewClientFormProps
                     placeholder="Emergency contact name"
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="emergencyRelationship">Relationship</Label>
                   <Input
@@ -205,7 +282,6 @@ export default function NewClientForm({ onClose, onSuccess }: NewClientFormProps
                     placeholder="Spouse, Parent, etc."
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="emergencyPhone">Phone</Label>
                   <Input
@@ -216,6 +292,19 @@ export default function NewClientForm({ onClose, onSuccess }: NewClientFormProps
                       emergencyContact: { ...formData.emergencyContact, phone: e.target.value }
                     })}
                     placeholder="Emergency contact phone"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="emergencyEmail">Email</Label>
+                  <Input
+                    id="emergencyEmail"
+                    type="email"
+                    value={formData.emergencyContact.email}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      emergencyContact: { ...formData.emergencyContact, email: e.target.value }
+                    })}
+                    placeholder="emergency@example.com"
                   />
                 </div>
               </div>

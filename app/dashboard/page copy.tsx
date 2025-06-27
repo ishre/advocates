@@ -564,28 +564,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-{/* Case Types Chart */}
-<div className="mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Cases by Type</CardTitle>
-            <CardDescription>Distribution of cases across different legal categories</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={caseTypeData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="type" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="cases" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Case Status Distribution */}
@@ -596,38 +575,25 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              {caseStatusData && caseStatusData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={caseStatusData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={true}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={100}
-                      innerRadius={60}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {caseStatusData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.color || `hsl(${index * 45}, 70%, 50%)`}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value, name) => [`${value} cases`, name]}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  No case status data available
-                </div>
-              )}
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={caseStatusData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {caseStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
@@ -654,7 +620,28 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      
+      {/* Case Types Chart */}
+      <div className="mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Cases by Type</CardTitle>
+            <CardDescription>Distribution of cases across different legal categories</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={caseTypeData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="type" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="cases" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Dashboard Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">

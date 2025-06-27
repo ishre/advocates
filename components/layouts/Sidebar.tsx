@@ -5,33 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ChevronLeft, ChevronRight, FileText, Users, Calendar, Upload, Database, Cloud, RefreshCw, Plus, Settings, Activity, Briefcase, Gavel, FolderOpen, Download, CheckCircle2, XCircle, AlertTriangle, Clock, DollarSign, TrendingUp, BarChart3, PieChart, LineChart, User, LogOut } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  FileText,
-  Users,
-  Calendar,
-  Upload,
-  Database,
-  Cloud,
-  RefreshCw,
-  Plus,
-  Settings,
-  Activity,
-  Briefcase,
-  Gavel,
-  FolderOpen,
-  Download,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Clock,
-  DollarSign,
-  TrendingUp,
-  BarChart3,
-  PieChart,
-  LineChart,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface SidebarProps {
   stats: {
@@ -69,6 +52,8 @@ interface SidebarProps {
   }>;
   backupStatus: 'idle' | 'backing_up' | 'restoring' | 'success' | 'error';
   sampleDataStatus: 'idle' | 'creating' | 'success' | 'error';
+  session: any;
+  onSignOut: () => void;
 }
 
 export default function Sidebar({
@@ -86,6 +71,8 @@ export default function Sidebar({
   availableBackups,
   backupStatus,
   sampleDataStatus,
+  session,
+  onSignOut,
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -107,8 +94,8 @@ export default function Sidebar({
   };
 
   return (
-    <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-80'}`}>
-      {/* Toggle Button */}
+    <div className={`flex flex-col h-screen bg-white border-r border-gray-200 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-80'}`}>
+      {/* Top: Toggle Button */}
       <div className="flex justify-end p-2">
         <Button
           variant="ghost"
@@ -119,8 +106,7 @@ export default function Sidebar({
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
-
-      <div className="p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* System Status */}
         <Card>
           <CardHeader className="pb-3">
@@ -165,28 +151,7 @@ export default function Sidebar({
           </CardContent>
         </Card>
 
-        {/* Quick Stats */}
-        {!isCollapsed && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-xs text-gray-600">Cases</span>
-                <Badge variant="secondary" className="text-xs">{stats.totalCases}</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-gray-600">Clients</span>
-                <Badge variant="secondary" className="text-xs">{stats.totalClients}</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-gray-600">Revenue</span>
-                <span className="text-xs font-medium">{formatCurrency(stats.totalRevenue)}</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        
 
         {/* Quick Actions */}
         <Card>
@@ -314,6 +279,51 @@ export default function Sidebar({
             </CardContent>
           </Card>
         )}
+      </div>
+      {/* Bottom: Profile Dropdown */}
+      <div className="p-4 border-t border-gray-100">
+        <Card className="shadow-none bg-transparent border-none">
+          <CardContent className="p-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full flex items-center justify-start p-2 rounded-lg hover:bg-gray-100">
+                  <Avatar className="h-9 w-9 mr-3">
+                    <AvatarImage src={session?.user?.image || ''} alt={session?.user?.name || ''} />
+                    <AvatarFallback>{session?.user?.name?.charAt(0) || session?.user?.email?.charAt(0) || 'U'}</AvatarFallback>
+                  </Avatar>
+                  {!isCollapsed && (
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm font-medium text-gray-900">{session?.user?.name}</span>
+                      <span className="text-xs text-gray-500">{session?.user?.email}</span>
+                    </div>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{session?.user?.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{session?.user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
