@@ -3,13 +3,6 @@
 import * as React from "react"
 import { useSession } from "next-auth/react"
 import {
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  LifeBuoy,
-  Map,
-  PieChart,
   Send,
   Settings2,
   SquareTerminal,
@@ -21,10 +14,10 @@ import {
   Database,
   Cloud,
   Shield,
-  Activity,
-  Bell,
   HelpCircle,
+  User,
 } from "lucide-react"
+import Link from "next/link"
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -41,8 +34,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { SidebarSystemStatusMenu } from "@/components/ui/system-status-sidebar"
 import { useState } from "react"
+import { Separator } from "./ui/separator"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session, status } = useSession()
@@ -53,7 +46,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Dashboard",
       url: "/dashboard",
       icon: SquareTerminal,
-      isActive: true,
       items: [
         {
           title: "Overview",
@@ -168,29 +160,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
       ],
     },
-    {
-      title: "Settings",
-      url: "/dashboard/settings",
-      icon: Settings2,
-      items: [
-        {
-          title: "Profile",
-          url: "/dashboard/settings/profile",
-        },
-        {
-          title: "Team",
-          url: "/dashboard/settings/team",
-        },
-        {
-          title: "Billing",
-          url: "/dashboard/settings/billing",
-        },
-        {
-          title: "Integrations",
-          url: "/dashboard/settings/integrations",
-        },
-      ],
-    },
   ]
 
   const navSecondary = [
@@ -242,19 +211,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <Shield className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">Legal Advocate</span>
-                    <span className="truncate text-xs">Case Management</span>
+                    <span className="truncate font-medium">Lexapro</span>
+                    <span className="truncate text-xs">Case Manager</span>
                   </div>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </div>
+        <Separator />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
         <NavProjects projects={projects} />
-        <NavSecondary items={navSecondary} className="mt-auto" />
+        <NavSecondary items={navSecondary} className="mt-auto " />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

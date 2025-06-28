@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
 import Case from '@/lib/models/Case';
-import Client from '@/lib/models/Client';
+import User from '@/lib/models/User';
 
 export async function GET(request: NextRequest) {
   try {
@@ -89,10 +89,18 @@ export async function POST(request: NextRequest) {
       deadlineDate,
       clientId,
       fees,
+      registrationDate,
+      previousDate,
+      stage,
+      particulars,
+      year,
+      clientName,
+      clientEmail,
+      clientPhone,
     } = body;
 
     // Validate required fields
-    if (!caseNumber || !title || !caseType || !clientId) {
+    if (!caseNumber || !title || !caseType || !clientId || !registrationDate) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -108,13 +116,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify client exists
-    const client = await Client.findById(clientId);
-    if (!client) {
+    // Verify client user exists and has client role
+    const clientUser = await User.findById(clientId);
+    if (!clientUser || !clientUser.roles.includes('client')) {
       return NextResponse.json(
-        { error: 'Client not found' },
+        { error: 'Client user not found or does not have client role' },
         { status: 404 }
       );
+    }
+
+    // Find the creator user by email
+    const creator = await User.findOne({ email: session.user.email });
+    if (!creator) {
+      return NextResponse.json({ error: 'Creator user not found' }, { status: 404 });
     }
 
     // Create new case
@@ -140,7 +154,15 @@ export async function POST(request: NextRequest) {
         currency: fees?.currency || 'USD',
       },
       status: 'active',
-      createdBy: session.user.email,
+      createdBy: creator._id,
+      registrationDate: registrationDate ? new Date(registrationDate) : undefined,
+      previousDate: previousDate ? new Date(previousDate) : undefined,
+      stage,
+      particulars,
+      year,
+      clientName,
+      clientEmail,
+      clientPhone,
     });
 
     await newCase.save();

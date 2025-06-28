@@ -49,7 +49,7 @@ const UserSchema = new Schema<IUser>({
   },
   roles: {
     type: [String],
-    enum: ['advocate', 'team_member', 'admin'],
+    enum: ['advocate', 'team_member', 'admin', 'client'],
     default: ['advocate'],
     validate: {
       validator: function(roles: string[]) {

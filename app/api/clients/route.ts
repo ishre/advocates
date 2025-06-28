@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
 import Client from '@/lib/models/Client';
+import User from '@/lib/models/User';
+import { getEmailService } from '@/lib/email-service';
+import bcrypt from 'bcryptjs';
 
 export async function GET(request: NextRequest) {
   try {
@@ -69,9 +72,8 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
 
     const body = await request.json();
-    const { name, email, phone, address, dateOfBirth, occupation, emergencyContact } = body;
+    const { name, email, phone } = body;
 
-    // Validate required fields
     if (!name || !email) {
       return NextResponse.json(
         { error: 'Name and email are required' },
@@ -79,38 +81,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if email already exists
-    const existingClient = await Client.findOne({ email });
-    if (existingClient) {
-      return NextResponse.json(
-        { error: 'Client with this email already exists' },
-        { status: 400 }
-      );
+    let user = await User.findOne({ email });
+    let isNewUser = false;
+    let plainPassword = '';
+
+    if (!user) {
+      // Create new user with client role and random password
+      plainPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-2);
+      const hashedPassword = await bcrypt.hash(plainPassword, 10);
+      user = new User({
+        name,
+        email,
+        phone,
+        password: hashedPassword,
+        roles: ['client'],
+        isActive: true,
+        emailVerified: false,
+      });
+      await user.save();
+      isNewUser = true;
+    } else {
+      // User exists, add client role if not present
+      if (!user.roles.includes('client')) {
+        user.roles.push('client');
+        await user.save();
+      }
     }
 
-    // Create new client
-    const newClient = new Client({
-      name,
-      email,
-      phone,
-      address,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-      occupation,
-      emergencyContact,
-      status: 'active',
-      createdBy: session.user.email,
-    });
-
-    await newClient.save();
+    // Send credentials email if new user
+    if (isNewUser) {
+      const emailService = getEmailService();
+      if (emailService) {
+        await emailService.sendEmail({
+          to: email,
+          subject: 'Your Client Account Credentials',
+          html: `<p>Hello ${name},</p><p>Your client account has been created. You can log in with the following credentials:</p><ul><li><b>Email:</b> ${email}</li><li><b>Password:</b> ${plainPassword}</li></ul><p>Please change your password after logging in.</p>`,
+          text: `Hello ${name},\nYour client account has been created.\nEmail: ${email}\nPassword: ${plainPassword}\nPlease change your password after logging in.`,
+        });
+      }
+    }
 
     return NextResponse.json({
-      message: 'Client created successfully',
-      client: newClient,
+      message: isNewUser ? 'Client user created successfully' : 'Client role added to existing user',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        roles: user.roles,
+      },
     });
   } catch (error) {
-    console.error('Error creating client:', error);
+    console.error('Error creating client user:', error);
     return NextResponse.json(
-      { error: 'Failed to create client' },
+      { error: 'Failed to create client user' },
       { status: 500 }
     );
   }

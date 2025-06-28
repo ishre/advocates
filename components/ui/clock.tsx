@@ -34,7 +34,14 @@ export function HeaderClock() {
 
   return (
     <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-md border">
-      <Clock className="h-4 w-4 text-muted-foreground" />
+      <div className="h-7 w-7 rounded-full">
+              <img 
+                src="https://flagcdn.com/in.svg"
+                alt="Country flag" 
+                className="h-full w-full object-cover rounded-md"
+
+              />
+            </div>
       <div className="flex flex-col items-start">
         <div className="text-sm font-medium">{formatTime(currentTime)}</div>
         <div className="text-xs text-muted-foreground">{formatDate(currentTime)}</div>

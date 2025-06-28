@@ -72,6 +72,13 @@ export interface ICase extends Document {
   googleDriveFolderId?: string;
   lastBackupDate?: Date;
   
+  // Add new fields for the new case form
+  registrationDate: Date;
+  previousDate: Date;
+  stage: string;
+  particulars: string;
+  year: number;
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -109,7 +116,7 @@ const CaseSchema = new Schema<ICase>({
   // Client Information
   clientId: {
     type: Schema.Types.ObjectId,
-    ref: 'Client',
+    ref: 'User',
     required: true,
   },
   clientName: {
@@ -280,6 +287,25 @@ const CaseSchema = new Schema<ICase>({
   },
   lastBackupDate: {
     type: Date,
+  },
+  
+  // Add new fields for the new case form
+  registrationDate: {
+    type: Date,
+    required: true,
+  },
+  previousDate: {
+    type: Date,
+  },
+  stage: {
+    type: String,
+    enum: ['Agreement', 'Arguments', 'Charge', 'Evidence', 'Judgement', 'Plaintiff Evidence', 'Remand'],
+  },
+  particulars: {
+    type: String,
+  },
+  year: {
+    type: Number,
   },
 }, {
   timestamps: true,

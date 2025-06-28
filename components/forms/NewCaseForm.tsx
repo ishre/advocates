@@ -94,6 +94,22 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
     try {
       // Find the selected client details
       const client = clients.find((c) => c._id === selectedClient);
+      console.log('Selected client:', client);
+      const requestBody = {
+        ...formData,
+        clientId: selectedClient,
+        clientName: client?.name,
+        clientEmail: client?.email,
+        clientPhone: client?.phone,
+        registrationDate: formData.filingDate,
+        fees: {
+          totalAmount: formData.totalAmount,
+          paidAmount: 0,
+          pendingAmount: formData.totalAmount,
+          currency: formData.currency,
+        },
+      };
+      console.log('Submitting case:', requestBody);
       if (!client) {
         setError('Please select a client.');
         setLoading(false);
@@ -104,19 +120,7 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          clientId: selectedClient,
-          clientName: client.name,
-          clientEmail: client.email,
-          clientPhone: client.phone,
-          fees: {
-            totalAmount: formData.totalAmount,
-            paidAmount: 0,
-            pendingAmount: formData.totalAmount,
-            currency: formData.currency,
-          },
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
@@ -127,6 +131,7 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
         }, 2000);
       } else {
         const errorData = await response.json();
+        console.error('Create case error:', errorData);
         throw new Error(errorData.error || 'Failed to create case');
       }
     } catch (error) {
@@ -152,8 +157,9 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
 
       if (response.ok) {
         const newClient = await response.json();
-        setClients([...clients, newClient.client]);
-        setSelectedClient(newClient.client._id);
+        const user = newClient.user;
+        setClients([...clients, { _id: user.id, name: user.name, email: user.email, phone: user.phone }]);
+        setSelectedClient(user.id);
         setShowNewClientForm(false);
         setNewClientData({ name: '', email: '', phone: '', address: { street: '', city: '', state: '', zipCode: '', country: '' }, emergencyContact: { name: '', relationship: '', phone: '', email: '' }, clientType: 'individual', status: 'active' });
       } else {
@@ -460,7 +466,11 @@ export default function NewCaseForm({ onClose, onSuccess }: NewCaseFormProps) {
                         </Select>
                       </div>
                       <div className="md:col-span-2">
-                        <Button type="submit" disabled={loading}>
+                        <Button
+                          type="button"
+                          disabled={loading}
+                          onClick={handleCreateClient}
+                        >
                           {loading ? 'Creating...' : 'Create Client'}
                         </Button>
                       </div>

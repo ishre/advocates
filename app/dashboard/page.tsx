@@ -441,22 +441,6 @@ export default function Dashboard() {
     });
   };
 
-  // Chart data
-  const caseStatusData = [
-    { name: 'Active', value: stats.activeCases, color: '#10b981' },
-    { name: 'Closed', value: stats.closedCases, color: '#6b7280' },
-    { name: 'Pending', value: stats.totalCases - stats.activeCases - stats.closedCases, color: '#f59e0b' },
-  ];
-
-  const monthlyRevenueData = [
-    { month: 'Jan', revenue: 15000 },
-    { month: 'Feb', revenue: 22000 },
-    { month: 'Mar', revenue: 18000 },
-    { month: 'Apr', revenue: 25000 },
-    { month: 'May', revenue: 30000 },
-    { month: 'Jun', revenue: 28000 },
-  ];
-
   const caseTypeData = [
     { type: 'Civil', cases: 25 },
     { type: 'Criminal', cases: 15 },
@@ -493,6 +477,7 @@ export default function Dashboard() {
 
   return (
     <>
+    
       {/* Status Alerts */}
       {backupStatus !== 'idle' && (
         <Alert className={backupStatus === 'success' ? 'border-green-200 bg-green-50' : backupStatus === 'error' ? 'border-red-200 bg-red-50' : 'border-blue-200 bg-blue-50'}>
@@ -564,97 +549,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-{/* Case Types Chart */}
-<div className="mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Cases by Type</CardTitle>
-            <CardDescription>Distribution of cases across different legal categories</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={caseTypeData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="type" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="cases" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Case Status Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Case Status Distribution</CardTitle>
-            <CardDescription>Breakdown of cases by status</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              {caseStatusData && caseStatusData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={caseStatusData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={true}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={100}
-                      innerRadius={60}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {caseStatusData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.color || `hsl(${index * 45}, 70%, 50%)`}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value, name) => [`${value} cases`, name]}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  No case status data available
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Monthly Revenue Trend */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Monthly Revenue Trend</CardTitle>
-            <CardDescription>Revenue over the last 6 months</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyRevenueData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                  <Area type="monotone" dataKey="revenue" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      
 
       {/* Main Dashboard Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
@@ -814,6 +709,28 @@ export default function Dashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+{/* Case Types Chart */}
+<div className="mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Cases by Type</CardTitle>
+            <CardDescription>Distribution of cases across different legal categories</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={caseTypeData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="type" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="cases" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>      
     </>
   );
 } 

@@ -1,5 +1,4 @@
 "use client";
-import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { AppSidebar } from "@/components/app-sidebar"
 import { HeaderClock } from "@/components/ui/clock"
 import {
@@ -17,6 +16,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function DashboardSectionLayout({ children }: { children: React.ReactNode }) {
   const [segments, setSegments] = useState<string[]>([]);
@@ -47,7 +47,7 @@ export default function DashboardSectionLayout({ children }: { children: React.R
                   <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
                 {segments.map((segment, index) => (
-                  <BreadcrumbItem key={index}>
+                  <BreadcrumbItem key={`breadcrumb-${index}`}>
                     <BreadcrumbSeparator>/</BreadcrumbSeparator>
                     <BreadcrumbPage>{segment}</BreadcrumbPage>
                   </BreadcrumbItem>
@@ -55,9 +55,16 @@ export default function DashboardSectionLayout({ children }: { children: React.R
               </BreadcrumbList>
             </Breadcrumb>
           </div>
+          <div className="ml-auto flex items-center gap-4 px-4">
+            <div className="flex items-center gap-2">
+              <HeaderClock />
+            </div>
+            
+          </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <DashboardLayout>{children}</DashboardLayout>
+        {children}
+        
         </div>
       </SidebarInset>
     </SidebarProvider>
