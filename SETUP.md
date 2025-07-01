@@ -18,11 +18,6 @@ NEXTAUTH_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
-# Google Drive (for backup)
-GOOGLE_DRIVE_CLIENT_ID=your-google-drive-client-id
-GOOGLE_DRIVE_CLIENT_SECRET=your-google-drive-client-secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/callback/google
-
 # Gmail SMTP (for email notifications)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -53,7 +48,6 @@ EMAIL_PASS=your-gmail-app-password
 2. **Enable APIs**
    - Go to "APIs & Services" > "Library"
    - Enable these APIs:
-     - Google Drive API
      - Gmail API
      - Google+ API
 
@@ -63,14 +57,12 @@ EMAIL_PASS=your-gmail-app-password
    - Application type: "Web application"
    - Authorized redirect URIs:
      - `http://localhost:3000/api/auth/callback/google`
-     - `http://localhost:3000/api/auth/callback/google-drive`
 
 4. **Configure Consent Screen**
    - Go to "APIs & Services" > "OAuth consent screen"
    - User Type: "External"
    - Add your domain
    - Add scopes:
-     - `https://www.googleapis.com/auth/drive.file`
      - `https://www.googleapis.com/auth/userinfo.email`
      - `https://www.googleapis.com/auth/userinfo.profile`
 
@@ -136,12 +128,6 @@ curl -X POST http://localhost:3000/api/email/send \
   }'
 ```
 
-### 5. Test Google Drive (Optional)
-
-1. Click "Backup" button in dashboard
-2. Check your Google Drive for backup folder
-3. Verify backup files are created
-
 ## Troubleshooting
 
 ### Common Issues
@@ -160,11 +146,6 @@ curl -X POST http://localhost:3000/api/email/send \
    - Verify app password (not regular password)
    - Check Gmail account settings
    - Ensure 2FA is enabled
-
-4. **Google Drive Backup Fails**
-   - Check OAuth consent screen configuration
-   - Verify Drive API is enabled
-   - Check scopes are added
 
 ### Debug Mode
 

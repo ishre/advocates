@@ -76,14 +76,22 @@ export interface IClient extends Document {
   // Status
   status: 'active' | 'inactive' | 'prospect' | 'former';
   
-  // Google Drive Integration
-  googleDriveFolderId?: string;
-  lastBackupDate?: Date;
-  
   // Metadata
   source: 'referral' | 'website' | 'advertisement' | 'walk_in' | 'other';
   assignedTo: mongoose.Types.ObjectId;
   createdBy: mongoose.Types.ObjectId;
+  
+  // Subscription and billing
+  subscription?: {
+    plan: 'free' | 'basic' | 'professional' | 'enterprise';
+    status: 'active' | 'inactive' | 'cancelled' | 'expired';
+    startDate: Date;
+    endDate?: Date;
+    trialEndsAt?: Date;
+  };
+  
+  // Tenant isolation - associate client with main advocate
+  advocateId: mongoose.Types.ObjectId;
   
   createdAt: Date;
   updatedAt: Date;
@@ -288,14 +296,6 @@ const ClientSchema = new Schema<IClient>({
     default: 'active',
   },
   
-  // Google Drive Integration
-  googleDriveFolderId: {
-    type: String,
-  },
-  lastBackupDate: {
-    type: Date,
-  },
-  
   // Metadata
   source: {
     type: String,
@@ -312,15 +312,50 @@ const ClientSchema = new Schema<IClient>({
     ref: 'User',
     required: true,
   },
+  
+  // Subscription and billing
+  subscription: {
+    plan: {
+      type: String,
+      enum: ['free', 'basic', 'professional', 'enterprise'],
+      default: 'free',
+    },
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'cancelled', 'expired'],
+      default: 'active',
+    },
+    startDate: {
+      type: Date,
+      default: Date.now,
+    },
+    endDate: {
+      type: Date,
+    },
+    trialEndsAt: {
+      type: Date,
+    },
+  },
+  
+  // Tenant isolation - associate client with main advocate
+  advocateId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true, // Add index for performance
+  },
 }, {
   timestamps: true,
 });
 
 // Indexes
-ClientSchema.index({ email: 1 });
 ClientSchema.index({ name: 1 });
 ClientSchema.index({ phone: 1 });
 ClientSchema.index({ status: 1 });
 ClientSchema.index({ assignedTo: 1 });
+
+// Indexes for tenant isolation and performance
+ClientSchema.index({ advocateId: 1 }); // For filtering by tenant
+ClientSchema.index({ email: 1, advocateId: 1 }); // For tenant-specific email lookups
 
 export default mongoose.models.Client || mongoose.model<IClient>('Client', ClientSchema); 

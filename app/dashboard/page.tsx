@@ -128,18 +128,9 @@ interface Task {
   caseNumber?: string;
 }
 
-interface BackupFile {
-  filename: string;
-  size: number;
-  createdAt: Date;
-  modifiedAt: Date;
-}
-
 interface SystemStatus {
   mongodb: boolean;
-  googleDrive: boolean;
   emailService: boolean;
-  lastBackup?: Date;
 }
 
 export default function Dashboard() {
@@ -161,22 +152,16 @@ export default function Dashboard() {
   const [upcomingHearings, setUpcomingHearings] = useState<UpcomingHearing[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [backupStatus, setBackupStatus] = useState<'idle' | 'backing_up' | 'restoring' | 'success' | 'error'>('idle');
-  const [backupMessage, setBackupMessage] = useState('');
-  const [availableBackups, setAvailableBackups] = useState<BackupFile[]>([]);
-  const [selectedBackup, setSelectedBackup] = useState<string>('');
   const [sampleDataStatus, setSampleDataStatus] = useState<'idle' | 'creating' | 'success' | 'error'>('idle');
   const [sampleDataMessage, setSampleDataMessage] = useState('');
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
     mongodb: false,
-    googleDrive: false,
     emailService: false,
   });
 
   useEffect(() => {
     if (status === 'authenticated') {
       fetchDashboardData();
-      fetchAvailableBackups();
       checkSystemStatus();
     }
   }, [status]);
@@ -226,21 +211,6 @@ export default function Dashboard() {
     }
   };
 
-  const fetchAvailableBackups = async () => {
-    try {
-      const response = await fetch('/api/backup/list');
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableBackups(data.backups || []);
-        if (data.backups && data.backups.length > 0) {
-          setSelectedBackup(data.backups[0].filename);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching available backups:', error);
-    }
-  };
-
   const checkSystemStatus = async () => {
     try {
       const response = await fetch('/api/system/status');
@@ -248,93 +218,11 @@ export default function Dashboard() {
         const statusData = await response.json();
         setSystemStatus({
           mongodb: statusData.mongodb,
-          googleDrive: statusData.googleDrive,
           emailService: statusData.emailService,
-          lastBackup: statusData.lastBackup ? new Date(statusData.lastBackup) : undefined,
         });
       }
     } catch (error) {
       console.error('Error checking system status:', error);
-    }
-  };
-
-  const handleBackup = async () => {
-    try {
-      setBackupStatus('backing_up');
-      setBackupMessage('Creating backup...');
-      
-      const response = await fetch('/api/backup/create', {
-        method: 'POST',
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        setBackupStatus('success');
-        setBackupMessage(`Backup created successfully! ${result.items.cases} cases, ${result.items.clients} clients`);
-        fetchAvailableBackups();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Backup failed');
-      }
-    } catch (error) {
-      setBackupStatus('error');
-      setBackupMessage(error instanceof Error ? error.message : 'Backup failed. Please try again.');
-    }
-  };
-
-  const handleDownloadBackup = async () => {
-    if (availableBackups.length === 0) return;
-    
-    try {
-      const latestBackup = availableBackups[0];
-      const response = await fetch(`/api/backup/download/${latestBackup.filename}`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = latestBackup.filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
-    } catch (error) {
-      console.error('Error downloading backup:', error);
-    }
-  };
-
-  const handleRestore = async () => {
-    if (!selectedBackup) {
-      setBackupStatus('error');
-      setBackupMessage('Please select a backup file to restore from.');
-      return;
-    }
-
-    try {
-      setBackupStatus('restoring');
-      setBackupMessage('Restoring from backup...');
-      
-      const response = await fetch('/api/backup/restore', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ backupFile: selectedBackup }),
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        setBackupStatus('success');
-        setBackupMessage(`Data restored successfully! ${result.restoredItems.cases} cases, ${result.restoredItems.clients} clients`);
-        fetchDashboardData();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Restore failed');
-      }
-    } catch (error) {
-      setBackupStatus('error');
-      setBackupMessage(error instanceof Error ? error.message : 'Restore failed. Please try again.');
     }
   };
 
@@ -479,14 +367,6 @@ export default function Dashboard() {
     <>
     
       {/* Status Alerts */}
-      {backupStatus !== 'idle' && (
-        <Alert className={backupStatus === 'success' ? 'border-green-200 bg-green-50' : backupStatus === 'error' ? 'border-red-200 bg-red-50' : 'border-blue-200 bg-blue-50'}>
-          <AlertDescription className={backupStatus === 'success' ? 'text-green-800' : backupStatus === 'error' ? 'text-red-800' : 'text-blue-800'}>
-            {backupMessage}
-          </AlertDescription>
-        </Alert>
-      )}
-
       {sampleDataStatus !== 'idle' && (
         <Alert className={sampleDataStatus === 'success' ? 'border-green-200 bg-green-50' : sampleDataStatus === 'error' ? 'border-red-200 bg-red-50' : 'border-blue-200 bg-blue-50'}>
           <AlertDescription className={sampleDataStatus === 'success' ? 'text-green-800' : sampleDataStatus === 'error' ? 'text-red-800' : 'text-blue-800'}>

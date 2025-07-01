@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { X, Save, User, Mail, Phone, MapPin, Calendar, Briefcase } from 'lucide-react';
+import { X, Save, User } from 'lucide-react';
 
 interface NewClientFormProps {
   onClose: () => void;

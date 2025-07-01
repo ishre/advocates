@@ -5,14 +5,11 @@ export interface IUser extends Document {
   email: string;
   password?: string;
   image?: string;
-  roles: string[]; // Array of roles: ['advocate', 'team_member', 'admin']
+  roles: string[]; // Array of roles: ['advocate', 'team_member', 'admin', 'client']
   companyName?: string;
   phone?: string;
   isActive: boolean;
   emailVerified: boolean;
-  googleDriveConnected: boolean;
-  googleDriveToken?: string;
-  googleDriveRefreshToken?: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   subscription?: {
@@ -22,6 +19,9 @@ export interface IUser extends Document {
     endDate?: Date;
     trialEndsAt?: Date;
   };
+  // Tenant isolation fields
+  advocateId?: Schema.Types.ObjectId | string; // For team members and clients - references the main advocate
+  isMainAdvocate?: boolean; // True if this user is the main advocate for their organization
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,10 +39,8 @@ const UserSchema = new Schema<IUser>({
   },
   password: {
     type: String,
-    // Password is required only if user doesn't have Google OAuth
-    required: function() {
-      return !this.googleDriveToken;
-    },
+    // Password is required for all users
+    required: true,
   },
   image: {
     type: String,
@@ -72,16 +70,6 @@ const UserSchema = new Schema<IUser>({
     type: Boolean,
     default: false,
   },
-  googleDriveConnected: {
-    type: Boolean,
-    default: false,
-  },
-  googleDriveToken: {
-    type: String,
-  },
-  googleDriveRefreshToken: {
-    type: String,
-  },
   resetPasswordToken: {
     type: String,
   },
@@ -110,11 +98,30 @@ const UserSchema = new Schema<IUser>({
       type: Date,
     },
   },
+  // Tenant isolation fields
+  advocateId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    // Required for team members and clients, optional for advocates
+    required: function(this: any) { 
+      return this.roles.includes('team_member') || this.roles.includes('client'); 
+    },
+  },
+  isMainAdvocate: {
+    type: Boolean,
+    default: function(this: any) {
+      // Default to true for users with advocate role who don't have an advocateId
+      return this.roles.includes('advocate') && !this.advocateId;
+    },
+  },
 }, {
   timestamps: true,
 });
 
-// Index for password reset (only this one, remove email index since it's already unique)
+// Indexes for tenant isolation and performance
 UserSchema.index({ resetPasswordToken: 1 });
+UserSchema.index({ advocateId: 1 }); // For filtering by tenant
+UserSchema.index({ email: 1, advocateId: 1 }); // For tenant-specific email lookups
+UserSchema.index({ isMainAdvocate: 1 }); // For finding main advocates
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema); 

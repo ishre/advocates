@@ -43,7 +43,6 @@ export default function SignupPage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     // Clear errors when user starts typing
-    if (error) setError('');
   };
 
   const validateForm = (): string | null => {
@@ -64,8 +63,6 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
-    setSuccess('');
 
     const validationError = validateForm();
     if (validationError) {
@@ -112,7 +109,6 @@ export default function SignupPage() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    setError('');
 
     try {
       await signIn('google', { callbackUrl: '/dashboard' });
@@ -418,4 +414,4 @@ export default function SignupPage() {
       </div>
     </div>
   );
-} 
+}

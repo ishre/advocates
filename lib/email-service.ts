@@ -432,6 +432,154 @@ If you have any questions, please contact our support team.
       text,
     });
   }
+
+  // Send welcome email to new client
+  async sendWelcomeEmail(
+    to: string,
+    welcomeData: {
+      name: string;
+      advocateName: string;
+      advocateEmail: string;
+      tempPassword: string;
+    }
+  ): Promise<boolean> {
+    const subject = 'Welcome to Legal Case Manager - Your Client Account';
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #1f2937; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0;">Legal Case Manager</h1>
+          <p style="margin: 10px 0 0 0;">Welcome to Your Client Account</p>
+        </div>
+        
+        <div style="padding: 20px; background-color: #f9fafb;">
+          <h2 style="color: #1f2937; margin-top: 0;">Hello, ${welcomeData.name}</h2>
+          
+          <p>Welcome to Legal Case Manager! Your client account has been created by ${welcomeData.advocateName}.</p>
+          
+          <div style="background-color: #ecfdf5; padding: 15px; border-radius: 8px; border-left: 4px solid #059669; margin: 20px 0;">
+            <h3 style="color: #059669; margin-top: 0;">Your Login Credentials</h3>
+            <p style="margin: 0;"><strong>Email:</strong> ${to}</p>
+            <p style="margin: 0;"><strong>Temporary Password:</strong> ${welcomeData.tempPassword}</p>
+          </div>
+          
+          <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+            <h3 style="color: #92400e; margin-top: 0;">Important Security Notice</h3>
+            <p style="margin: 0;">Please change your password immediately after your first login for security purposes.</p>
+          </div>
+          
+          <div style="background-color: white; padding: 15px; border-radius: 8px;">
+            <h3 style="color: #1f2937; margin-top: 0;">What You Can Do</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+              <li>View your case details and updates</li>
+              <li>Access important documents</li>
+              <li>Track hearing schedules</li>
+              <li>Communicate with your advocate</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div style="background-color: #1f2937; color: white; padding: 20px; text-align: center;">
+          <p style="margin: 0;">If you have any questions, please contact ${welcomeData.advocateName} at ${welcomeData.advocateEmail}</p>
+        </div>
+      </div>
+    `;
+
+    const text = `
+Welcome to Legal Case Manager - Your Client Account
+
+Hello ${welcomeData.name},
+
+Welcome to Legal Case Manager! Your client account has been created by ${welcomeData.advocateName}.
+
+Your Login Credentials:
+- Email: ${to}
+- Temporary Password: ${welcomeData.tempPassword}
+
+Important Security Notice:
+Please change your password immediately after your first login for security purposes.
+
+What You Can Do:
+- View your case details and updates
+- Access important documents
+- Track hearing schedules
+- Communicate with your advocate
+
+If you have any questions, please contact ${welcomeData.advocateName} at ${welcomeData.advocateEmail}
+    `;
+
+    return this.sendEmail({
+      to,
+      subject,
+      html,
+      text,
+    });
+  }
+
+  // Send account deletion notification
+  async sendAccountDeletionEmail(
+    to: string,
+    deletionData: {
+      name: string;
+      advocateName: string;
+    }
+  ): Promise<boolean> {
+    const subject = 'Account Deletion Notice - Legal Case Manager';
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #1f2937; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0;">Legal Case Manager</h1>
+          <p style="margin: 10px 0 0 0;">Account Deletion Notice</p>
+        </div>
+        
+        <div style="padding: 20px; background-color: #f9fafb;">
+          <h2 style="color: #1f2937; margin-top: 0;">Hello, ${deletionData.name}</h2>
+          
+          <div style="background-color: #fef2f2; padding: 15px; border-radius: 8px; border-left: 4px solid #dc2626; margin: 20px 0;">
+            <h3 style="color: #991b1b; margin-top: 0;">Account Deletion Notice</h3>
+            <p style="margin: 0;">Your client account has been deleted by ${deletionData.advocateName} because all your cases have been closed.</p>
+          </div>
+          
+          <div style="background-color: white; padding: 15px; border-radius: 8px;">
+            <h3 style="color: #1f2937; margin-top: 0;">What This Means</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+              <li>You will no longer be able to access your account</li>
+              <li>All your case data has been archived</li>
+              <li>You can contact ${deletionData.advocateName} if you need any information</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div style="background-color: #1f2937; color: white; padding: 20px; text-align: center;">
+          <p style="margin: 0;">If you have any questions, please contact ${deletionData.advocateName}</p>
+        </div>
+      </div>
+    `;
+
+    const text = `
+Account Deletion Notice - Legal Case Manager
+
+Hello ${deletionData.name},
+
+Account Deletion Notice:
+Your client account has been deleted by ${deletionData.advocateName} because all your cases have been closed.
+
+What This Means:
+- You will no longer be able to access your account
+- All your case data has been archived
+- You can contact ${deletionData.advocateName} if you need any information
+
+If you have any questions, please contact ${deletionData.advocateName}
+    `;
+
+    return this.sendEmail({
+      to,
+      subject,
+      html,
+      text,
+    });
+  }
 }
 
 // Singleton instance

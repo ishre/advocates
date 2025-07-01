@@ -15,20 +15,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { usePathname } from "next/navigation";
+import React from "react";
 
 export default function DashboardSectionLayout({ children }: { children: React.ReactNode }) {
-  const [segments, setSegments] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const pathSegments = window.location.pathname
-        .split('/')
-        .filter(segment => segment && segment !== 'dashboard');
-      setSegments(pathSegments);
-    }
-  }, []);
+  const pathname = usePathname();
+  const segments = pathname
+    .split('/')
+    .filter(segment => segment && segment !== 'dashboard');
 
   return (
     <SidebarProvider>
@@ -47,10 +41,12 @@ export default function DashboardSectionLayout({ children }: { children: React.R
                   <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
                 {segments.map((segment, index) => (
-                  <BreadcrumbItem key={`breadcrumb-${index}`}>
-                    <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                    <BreadcrumbPage>{segment}</BreadcrumbPage>
-                  </BreadcrumbItem>
+                  <React.Fragment key={`breadcrumb-${index}`}>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>{segment}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </React.Fragment>
                 ))}
               </BreadcrumbList>
             </Breadcrumb>

@@ -4,18 +4,14 @@ import * as React from "react"
 import { useSession } from "next-auth/react"
 import {
   Send,
-  Settings2,
   SquareTerminal,
   Briefcase,
   Users,
   FileText,
   Calendar,
   DollarSign,
-  Database,
-  Cloud,
-  Shield,
   HelpCircle,
-  User,
+  type LucideIcon,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -28,8 +24,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarRail,
-  SidebarTrigger,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -38,8 +32,7 @@ import { useState } from "react"
 import { Separator } from "./ui/separator"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { data: session, status } = useSession()
-  const [systemStatusOpen, setSystemStatusOpen] = useState(false)
+  const { data: session } = useSession()
   // Navigation data for legal case management
   const navMain = [
     {
@@ -175,17 +168,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ]
 
-  const projects = [
-    {
-      name: "Backup & Restore",
-      url: "/dashboard/system/backup",
-      icon: Database,
-    },
-    {
-      name: "Google Drive",
-      url: "/dashboard/system/google-drive",
-      icon: Cloud,
-    },
+  const projects: {
+    name: string
+    url: string
+    icon: LucideIcon
+  }[] = [
+    // Removed backup/restore and Google Drive projects
   ]
 
   // Create user object from session data
@@ -208,7 +196,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuButton size="lg" asChild>
                 <a href="/dashboard">
                   <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <Shield className="size-4" />
+                    <SquareTerminal className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Lexapro</span>

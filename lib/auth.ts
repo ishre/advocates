@@ -66,6 +66,8 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             image: user.image,
             roles: user.roles,
+            advocateId: user.advocateId?.toString(),
+            isMainAdvocate: user.isMainAdvocate,
           };
         } catch (error) {
           console.error('Credentials authorization error:', error);
@@ -79,6 +81,8 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.roles = user.roles;
         token.id = user.id;
+        token.advocateId = user.advocateId;
+        token.isMainAdvocate = user.isMainAdvocate;
       }
       return token;
     },
@@ -86,6 +90,8 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.roles = token.roles;
         session.user.id = token.id;
+        session.user.advocateId = token.advocateId;
+        session.user.isMainAdvocate = token.isMainAdvocate;
       }
       return session;
     },
@@ -117,6 +123,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             image: user.image,
             roles: ['advocate'], // Default role for new users
+            isMainAdvocate: true, // New advocates are main advocates
             googleDriveConnected: true,
             googleDriveToken: account.access_token,
             googleDriveRefreshToken: account.refresh_token,

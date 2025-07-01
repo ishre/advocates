@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
 import Case from '@/lib/models/Case';
 import User from '@/lib/models/User';
+import { getTenantId } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,24 +15,75 @@ export async function GET(request: NextRequest) {
 
     await connectToDatabase();
 
+    // Get the current user to determine tenant ID
+    const currentUser = await User.findOne({ email: session.user.email });
+    if (!currentUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const tenantId = getTenantId(currentUser);
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Invalid tenant configuration' }, { status: 400 });
+    }
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const status = searchParams.get('status');
+    const priority = searchParams.get('priority');
     const caseType = searchParams.get('caseType');
     const search = searchParams.get('search');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const clientId = searchParams.get('clientId');
 
-    const query: any = {};
+    const query: Record<string, unknown> = {
+      advocateId: tenantId, // Filter by tenant/advocate
+    };
 
-    if (status) query.status = status;
+    // Handle status filter (comma-separated values)
+    if (status) {
+      const statusArray = status.split(',').map(s => s.trim());
+      if (statusArray.length === 1) {
+        query.status = statusArray[0];
+      } else {
+        query.status = { $in: statusArray };
+      }
+    }
+
+    // Handle priority filter (comma-separated values)
+    if (priority) {
+      const priorityArray = priority.split(',').map(p => p.trim());
+      if (priorityArray.length === 1) {
+        query.priority = priorityArray[0];
+      } else {
+        query.priority = { $in: priorityArray };
+      }
+    }
+
     if (caseType) query.caseType = caseType;
+    
+    // Handle date range filters
+    if (dateFrom || dateTo) {
+      query.createdAt = {} as Record<string, Date>;
+      if (dateFrom) {
+        (query.createdAt as Record<string, Date>)["$gte"] = new Date(dateFrom);
+      }
+      if (dateTo) {
+        (query.createdAt as Record<string, Date>)["$lte"] = new Date(dateTo + 'T23:59:59.999Z');
+      }
+    }
+
     if (search) {
       query.$or = [
         { caseNumber: { $regex: search, $options: 'i' } },
         { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
+        { clientName: { $regex: search, $options: 'i' } },
       ];
     }
+
+    if (clientId) query.clientId = clientId;
 
     const skip = (page - 1) * limit;
 
@@ -72,6 +124,17 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase();
 
+    // Get the current user to determine tenant ID
+    const currentUser = await User.findOne({ email: session.user.email });
+    if (!currentUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const tenantId = getTenantId(currentUser);
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Invalid tenant configuration' }, { status: 400 });
+    }
+
     const body = await request.json();
     const {
       caseNumber,
@@ -107,8 +170,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if case number already exists
-    const existingCase = await Case.findOne({ caseNumber });
+    // Check if case number already exists within the same tenant
+    const existingCase = await Case.findOne({ 
+      caseNumber,
+      advocateId: tenantId 
+    });
     if (existingCase) {
       return NextResponse.json(
         { error: 'Case number already exists' },
@@ -116,19 +182,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify client user exists and has client role
-    const clientUser = await User.findById(clientId);
-    if (!clientUser || !clientUser.roles.includes('client')) {
+    // Verify client user exists and has client role within the same tenant
+    const clientUser = await User.findOne({ 
+      _id: clientId,
+      advocateId: tenantId,
+      roles: 'client'
+    });
+    if (!clientUser) {
       return NextResponse.json(
         { error: 'Client user not found or does not have client role' },
         { status: 404 }
       );
-    }
-
-    // Find the creator user by email
-    const creator = await User.findOne({ email: session.user.email });
-    if (!creator) {
-      return NextResponse.json({ error: 'Creator user not found' }, { status: 404 });
     }
 
     // Create new case
@@ -147,6 +211,7 @@ export async function POST(request: NextRequest) {
       nextHearingDate: nextHearingDate ? new Date(nextHearingDate) : undefined,
       deadlineDate: deadlineDate ? new Date(deadlineDate) : undefined,
       clientId,
+      advocateId: tenantId.toString(),
       fees: {
         totalAmount: fees?.totalAmount || 0,
         paidAmount: fees?.paidAmount || 0,
@@ -154,7 +219,7 @@ export async function POST(request: NextRequest) {
         currency: fees?.currency || 'USD',
       },
       status: 'active',
-      createdBy: creator._id,
+      createdBy: currentUser._id,
       registrationDate: registrationDate ? new Date(registrationDate) : undefined,
       previousDate: previousDate ? new Date(previousDate) : undefined,
       stage,
@@ -166,9 +231,6 @@ export async function POST(request: NextRequest) {
     });
 
     await newCase.save();
-
-    // Populate client information
-    await newCase.populate('clientId', 'name email phone');
 
     return NextResponse.json({
       message: 'Case created successfully',

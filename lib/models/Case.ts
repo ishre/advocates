@@ -39,6 +39,9 @@ export interface ICase extends Document {
   assignedTo: mongoose.Types.ObjectId[];
   createdBy: mongoose.Types.ObjectId;
   
+  // Tenant isolation - associate case with main advocate
+  advocateId: mongoose.Types.ObjectId;
+  
   // Documents
   documents: Array<{
     name: string;
@@ -195,6 +198,14 @@ const CaseSchema = new Schema<ICase>({
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+  },
+  
+  // Tenant isolation - associate case with main advocate
+  advocateId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true, // Add index for performance
   },
   
   // Documents

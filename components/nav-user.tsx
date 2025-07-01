@@ -2,12 +2,10 @@
 
 import { signOut } from "next-auth/react"
 import {
-  BadgeCheck,
   Bell,
   ChevronsUpDown,
   CreditCard,
   LogOut,
-  Sparkles,
   User,
   Settings,
 } from "lucide-react"

@@ -8,6 +8,8 @@ declare module 'next-auth' {
       email: string;
       image?: string;
       roles: string[];
+      advocateId?: string;
+      isMainAdvocate?: boolean;
     };
   }
 
@@ -17,6 +19,8 @@ declare module 'next-auth' {
     email: string;
     image?: string;
     roles: string[];
+    advocateId?: string;
+    isMainAdvocate?: boolean;
   }
 }
 
@@ -24,5 +28,7 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     roles: string[];
+    advocateId?: string;
+    isMainAdvocate?: boolean;
   }
 } 

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { X, Save, Calendar, Clock, MapPin, Users, FileText } from 'lucide-react';
+import { X, Save, Calendar } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 interface HearingSchedulerProps {

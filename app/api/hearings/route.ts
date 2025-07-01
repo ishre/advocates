@@ -3,9 +3,30 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
 import Case from '@/lib/models/Case';
+import User from '@/lib/models/User';
+import { getTenantId } from '@/lib/utils';
 
-// Simple in-memory storage for hearings (in production, you'd use a proper database model)
-let hearings: any[] = [];
+// Define Hearing type
+interface Hearing {
+  id: string;
+  caseId: string;
+  caseNumber: string;
+  caseTitle: string;
+  clientName: string;
+  hearingType: string;
+  dateTime: Date | string;
+  duration: number;
+  courtRoom?: string;
+  judgeName?: string;
+  description?: string;
+  attendees?: string[];
+  notes?: string;
+  status: string;
+  createdBy: string;
+  createdAt: Date;
+}
+
+const hearings: Hearing[] = [];
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,22 +39,22 @@ export async function GET(request: NextRequest) {
     const caseId = searchParams.get('caseId');
     const date = searchParams.get('date');
 
-    let filteredHearings = hearings;
+    let filteredHearings: Hearing[] = hearings;
 
     if (caseId) {
-      filteredHearings = filteredHearings.filter(h => h.caseId === caseId);
+      filteredHearings = filteredHearings.filter((h: Hearing) => h.caseId === caseId);
     }
 
     if (date) {
       const targetDate = new Date(date);
-      filteredHearings = filteredHearings.filter(h => {
+      filteredHearings = filteredHearings.filter((h: Hearing) => {
         const hearingDate = new Date(h.dateTime);
         return hearingDate.toDateString() === targetDate.toDateString();
       });
     }
 
     // Sort by date
-    filteredHearings.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+    filteredHearings.sort((a: Hearing, b: Hearing) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
     return NextResponse.json({
       hearings: filteredHearings,
@@ -56,6 +77,17 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase();
 
+    // Get the current user to determine tenant ID
+    const currentUser = await User.findOne({ email: session.user.email });
+    if (!currentUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const tenantId = getTenantId(currentUser);
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Invalid tenant configuration' }, { status: 400 });
+    }
+
     const body = await request.json();
     const {
       caseId,
@@ -77,8 +109,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify case exists
-    const caseItem = await Case.findById(caseId).populate('clientId', 'name email');
+    // Verify case exists and belongs to the tenant
+    const caseItem = await Case.findOne({ _id: caseId, advocateId: tenantId }).populate('clientId', 'name email');
     if (!caseItem) {
       return NextResponse.json(
         { error: 'Case not found' },

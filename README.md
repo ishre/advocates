@@ -1,6 +1,6 @@
 # 🏛️ Legal Case Manager
 
-A comprehensive Next.js SaaS application for legal case management with MongoDB, Google Drive backup, and Gmail integration.
+A comprehensive Next.js SaaS application for legal case management with MongoDB and Gmail integration.
 
 ## ✨ Features
 
@@ -36,12 +36,6 @@ A comprehensive Next.js SaaS application for legal case management with MongoDB,
 - **Deadline tracking**
 - **Court appearance management**
 - **Email notifications**
-
-### ☁️ Google Drive Integration
-- **Automatic daily backups** to Google Drive
-- **Data restoration** functionality
-- **Backup history** management
-- **Secure OAuth2 authentication**
 
 ### 📧 Email Integration
 - **Gmail SMTP** integration with app passwords
@@ -85,11 +79,6 @@ NEXTAUTH_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
-# Google Drive (for backup)
-GOOGLE_DRIVE_CLIENT_ID=your-google-drive-client-id
-GOOGLE_DRIVE_CLIENT_SECRET=your-google-drive-client-secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/callback/google
-
 # Gmail SMTP (for email notifications)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -104,7 +93,6 @@ EMAIL_PASS=your-gmail-app-password
    - Create a new project or select existing one
 
 2. **Enable APIs**
-   - Google Drive API
    - Gmail API
    - Google+ API
 
@@ -113,12 +101,10 @@ EMAIL_PASS=your-gmail-app-password
    - Create OAuth 2.0 Client ID
    - Add authorized redirect URIs:
      - `http://localhost:3000/api/auth/callback/google`
-     - `http://localhost:3000/api/auth/callback/google-drive`
 
 4. **Configure Consent Screen**
    - Add your domain
    - Add required scopes:
-     - `https://www.googleapis.com/auth/drive.file`
      - `https://www.googleapis.com/auth/userinfo.email`
      - `https://www.googleapis.com/auth/userinfo.profile`
 
@@ -145,8 +131,7 @@ Visit `http://localhost:3000` to access the application.
 
 1. **Sign Up/In**: Use Google OAuth or create a credentials account
 2. **Create Sample Data**: Click "Sample Data" button to populate the dashboard
-3. **Configure Backup**: Set up Google Drive integration for automatic backups
-4. **Test Email**: Send test emails to verify Gmail integration
+3. **Test Email**: Send test emails to verify Gmail integration
 
 ### Daily Operations
 
@@ -157,13 +142,6 @@ Visit `http://localhost:3000` to access the application.
 5. **Task Management**: Create and track case-related tasks
 6. **Hearing Scheduling**: Schedule and manage court appearances
 7. **Email Communications**: Send professional emails to clients
-
-### Backup & Restore
-
-- **Automatic Backups**: Data is automatically backed up to Google Drive
-- **Manual Backup**: Click "Backup" button for immediate backup
-- **Restore**: Click "Restore" to restore from the latest backup
-- **Backup History**: View all previous backups in Google Drive
 
 ## 🏗️ Architecture
 
@@ -177,7 +155,7 @@ Visit `http://localhost:3000` to access the application.
 ### Backend
 - **Next.js API Routes** for server-side logic
 - **MongoDB** with Mongoose ODM
-- **Google APIs** for Drive and Gmail integration
+- **Google APIs** for Gmail integration
 - **Nodemailer** for email functionality
 
 ### Database Models
@@ -202,7 +180,6 @@ advocate/
 │   ├── models/           # MongoDB models
 │   ├── auth.ts           # NextAuth configuration
 │   ├── mongodb.ts        # Database connection
-│   ├── google-drive.ts   # Google Drive service
 │   └── email-service.ts  # Email service
 └── types/                # TypeScript type definitions
 ```

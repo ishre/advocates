@@ -1,103 +1,137 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
 import Case from '@/lib/models/Case';
 import Client from '@/lib/models/Client';
 import User from '@/lib/models/User';
+import { getTenantId } from '@/lib/utils';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectToDatabase();
 
-    // Get user
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
+    // Get the current user to determine tenant ID
+    const currentUser = await User.findOne({ email: session.user.email });
+    if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Calculate statistics based on user role
-    let caseQuery = {};
-    let clientQuery = {};
-
-    if (user.roles.includes('advocate')) {
-      // Advocate can see all cases and clients
-      caseQuery = {};
-      clientQuery = {};
-    } else {
-      // Team members can only see assigned cases and clients
-      caseQuery = { assignedTo: user._id };
-      clientQuery = { assignedTo: user._id };
+    const tenantId = getTenantId(currentUser);
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Invalid tenant configuration' }, { status: 400 });
     }
 
-    // Get case statistics
+    // Get stats for the tenant
     const [
       totalCases,
       activeCases,
       closedCases,
+      pendingCases,
       totalClients,
       activeClients,
-      casesWithFees,
+      recentCases,
       upcomingHearings,
-      overdueTasks,
-      completedTasks
     ] = await Promise.all([
-      Case.countDocuments(caseQuery),
-      Case.countDocuments({ ...caseQuery, status: 'active' }),
-      Case.countDocuments({ ...caseQuery, status: 'closed' }),
-      Client.countDocuments(clientQuery),
-      Client.countDocuments({ ...clientQuery, status: 'active' }),
-      Case.find(caseQuery).select('fees'),
-      Case.countDocuments({
-        ...caseQuery,
+      // Total cases
+      Case.countDocuments({ advocateId: tenantId }),
+      
+      // Active cases
+      Case.countDocuments({ 
+        advocateId: tenantId,
+        status: 'active' 
+      }),
+      
+      // Closed cases
+      Case.countDocuments({ 
+        advocateId: tenantId,
+        status: 'closed' 
+      }),
+      
+      // Pending cases
+      Case.countDocuments({ 
+        advocateId: tenantId,
+        status: 'pending' 
+      }),
+      
+      // Total clients
+      User.countDocuments({ 
+        advocateId: tenantId,
+        roles: 'client' 
+      }),
+      
+      // Active clients
+      User.countDocuments({ 
+        advocateId: tenantId,
+        roles: 'client',
+        isActive: true 
+      }),
+      
+      // Recent cases (last 5)
+      Case.find({ advocateId: tenantId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('caseNumber title status createdAt')
+        .lean(),
+      
+      // Upcoming hearings (next 7 days)
+      Case.find({
+        advocateId: tenantId,
         nextHearingDate: {
           $gte: new Date(),
-          $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Next 30 days
-        }
-      }),
-      Case.countDocuments({
-        ...caseQuery,
-        'tasks.status': 'overdue'
-      }),
-      Case.countDocuments({
-        ...caseQuery,
-        'tasks.status': 'completed'
+          $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        },
+        status: { $in: ['active', 'pending'] }
       })
+        .sort({ nextHearingDate: 1 })
+        .limit(5)
+        .select('caseNumber title nextHearingDate courtName')
+        .lean(),
     ]);
 
-    // Calculate total revenue and pending fees
-    const totalRevenue = casesWithFees.reduce((sum, case_) => {
-      return sum + (case_.fees?.totalAmount || 0);
-    }, 0);
-
-    const pendingFees = casesWithFees.reduce((sum, case_) => {
-      return sum + (case_.fees?.pendingAmount || 0);
-    }, 0);
+    // Calculate financial stats
+    const financialStats = await Case.aggregate([
+      { $match: { advocateId: tenantId } },
+      {
+        $group: {
+          _id: null,
+          totalFees: { $sum: '$fees.totalAmount' },
+          totalPaid: { $sum: '$fees.paidAmount' },
+          totalPending: { $sum: '$fees.pendingAmount' },
+        }
+      }
+    ]);
 
     const stats = {
-      totalCases,
-      activeCases,
-      closedCases,
-      totalClients,
-      activeClients,
-      totalRevenue,
-      pendingFees,
-      upcomingHearings,
-      overdueTasks,
-      completedTasks,
+      cases: {
+        total: totalCases,
+        active: activeCases,
+        closed: closedCases,
+        pending: pendingCases,
+      },
+      clients: {
+        total: totalClients,
+        active: activeClients,
+      },
+      financial: financialStats[0] || {
+        totalFees: 0,
+        totalPaid: 0,
+        totalPending: 0,
+      },
+      recent: recentCases,
+      upcoming: upcomingHearings,
     };
 
     return NextResponse.json(stats);
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch dashboard stats' },
       { status: 500 }
     );
   }
