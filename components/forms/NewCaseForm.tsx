@@ -141,7 +141,7 @@ export default function NewCaseForm({ onClose, onSuccess, variant = 'overlay' }:
   }
 
   const formContent = (
-    <Card className={`w-full ${variant === 'dialog' ? '' : 'max-w-4xl max-h-[90vh] overflow-y-auto'}`}>
+    <Card className={`w-full ${variant === 'dialog' ? 'max-h-[80vh] overflow-y-auto' : 'max-w-4xl max-h-[90vh] overflow-y-auto'}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -153,9 +153,11 @@ export default function NewCaseForm({ onClose, onSuccess, variant = 'overlay' }:
               Create a new legal case with all necessary details
             </CardDescription>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+          {variant !== 'dialog' && (
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent>

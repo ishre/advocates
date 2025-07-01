@@ -34,6 +34,7 @@ export async function GET() {
       pendingCases,
       totalClients,
       activeClients,
+      inactiveClients,
       recentCases,
       upcomingHearings,
     ] = await Promise.all([
@@ -69,6 +70,13 @@ export async function GET() {
         advocateId: tenantId,
         roles: 'client',
         isActive: true 
+      }),
+      
+      // Inactive clients
+      User.countDocuments({ 
+        advocateId: tenantId,
+        roles: 'client',
+        isActive: false 
       }),
       
       // Recent cases (last 5)
@@ -116,6 +124,7 @@ export async function GET() {
       clients: {
         total: totalClients,
         active: activeClients,
+        inactive: inactiveClients,
       },
       financial: financialStats[0] || {
         totalFees: 0,
