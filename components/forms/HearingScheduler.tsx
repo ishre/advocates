@@ -123,7 +123,7 @@ export default function HearingScheduler({ onClose, onSuccess }: HearingSchedule
         setTestEmailStatus(data.error || 'Failed to send test email.');
       }
     } catch (err) {
-      setTestEmailStatus('Failed to send test email.');
+      setTestEmailStatus(err instanceof Error ? err.message : 'Failed to send test email.');
     } finally {
       setTestEmailLoading(false);
     }

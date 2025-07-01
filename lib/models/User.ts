@@ -103,15 +103,16 @@ const UserSchema = new Schema<IUser>({
     type: Schema.Types.ObjectId,
     ref: 'User',
     // Required for team members and clients, optional for advocates
-    required: function(this: any) { 
-      return this.roles.includes('team_member') || this.roles.includes('client'); 
+    required: function(this: unknown) {
+      const self = this as { roles: string[]; advocateId?: string };
+      return self.roles.includes('team_member') || self.roles.includes('client');
     },
   },
   isMainAdvocate: {
     type: Boolean,
-    default: function(this: any) {
-      // Default to true for users with advocate role who don't have an advocateId
-      return this.roles.includes('advocate') && !this.advocateId;
+    default: function(this: unknown) {
+      const self = this as { roles: string[]; advocateId?: string };
+      return self.roles.includes('advocate') && !self.advocateId;
     },
   },
 }, {

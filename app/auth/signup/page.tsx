@@ -35,8 +35,8 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -66,7 +66,6 @@ export default function SignupPage() {
 
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
       setIsLoading(false);
       return;
     }
@@ -101,9 +100,13 @@ export default function SignupPage() {
       }, 2000);
 
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Something went wrong');
-    } finally {
       setIsLoading(false);
+      // Optionally log or display error
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unexpected error occurred.');
+      }
     }
   };
 
@@ -113,8 +116,13 @@ export default function SignupPage() {
     try {
       await signIn('google', { callbackUrl: '/dashboard' });
     } catch (error) {
-      setError('An error occurred. Please try again.');
       setIsLoading(false);
+      // Optionally log or display error
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unexpected error occurred.');
+      }
     }
   };
 
@@ -127,6 +135,12 @@ export default function SignupPage() {
             Create your account to get started
           </p>
         </div>
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         <Card>
           <CardHeader className="space-y-1">
@@ -363,12 +377,6 @@ export default function SignupPage() {
                   </Button>
                 </div>
               </div>
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
 
               {success && (
                 <Alert className="border-green-200 bg-green-50 text-green-800">

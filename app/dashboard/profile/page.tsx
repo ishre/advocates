@@ -105,7 +105,7 @@ export default function ProfilePage() {
           toast.error('Failed to load profile');
         }
       } catch (error) {
-        toast.error('Error loading profile');
+        toast.error(error instanceof Error ? error.message : 'Error loading profile');
       } finally {
         setIsLoading(false);
       }
@@ -134,11 +134,10 @@ export default function ProfilePage() {
         toast.success('Profile updated successfully');
         await update();
       } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to update profile');
+        toast.error('Failed to update profile');
       }
     } catch (error) {
-      toast.error('Error updating profile');
+      toast.error(error instanceof Error ? error.message : 'Error updating profile');
     } finally {
       setIsSaving(false);
     }
@@ -162,11 +161,10 @@ export default function ProfilePage() {
         toast.success('Password changed successfully');
         passwordForm.reset();
       } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to change password');
+        toast.error('Failed to change password');
       }
     } catch (error) {
-      toast.error('Error changing password');
+      toast.error(error instanceof Error ? error.message : 'Error changing password');
     }
   };
 
@@ -193,7 +191,7 @@ export default function ProfilePage() {
         toast.error('Failed to upload image');
       }
     } catch (error) {
-      toast.error('Error uploading image');
+      toast.error(error instanceof Error ? error.message : 'Error uploading image');
     }
   };
 

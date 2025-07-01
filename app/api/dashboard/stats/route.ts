@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
 import Case from '@/lib/models/Case';
-import Client from '@/lib/models/Client';
 import User from '@/lib/models/User';
 import { getTenantId } from '@/lib/utils';
 

@@ -167,13 +167,15 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      await emailService.sendWelcomeEmail({
-        to: newClient.email,
-        name: newClient.name,
-        advocateName: currentUser.name,
-        advocateEmail: currentUser.email,
-        tempPassword,
-      });
+      await emailService.sendWelcomeEmail(
+        newClient.email,
+        {
+          name: newClient.name,
+          advocateName: currentUser.name,
+          advocateEmail: currentUser.email,
+          tempPassword,
+        }
+      );
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
       // Don't fail the request if email fails
@@ -270,11 +272,13 @@ export async function DELETE(request: NextRequest) {
         },
       });
 
-      await emailService.sendAccountDeletionEmail({
-        to: client.email,
-        name: client.name,
-        advocateName: currentUser.name,
-      });
+      await emailService.sendAccountDeletionEmail(
+        client.email,
+        {
+          name: client.name,
+          advocateName: currentUser.name,
+        }
+      );
     } catch (emailError) {
       console.error('Failed to send deletion email:', emailError);
       // Don't fail the request if email fails

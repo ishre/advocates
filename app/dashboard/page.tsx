@@ -1,36 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
+  ResponsiveContainer,
   BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
+  CartesianGrid,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  Legend,
-  ResponsiveContainer,
+  Bar
 } from 'recharts';
 import { 
   Calendar, 
@@ -38,39 +19,9 @@ import {
   Users, 
   Briefcase, 
   DollarSign, 
-  TrendingUp, 
   Clock, 
-  CheckCircle, 
-  AlertTriangle,
   Upload,
-  Download,
-  RefreshCw,
-  Mail,
-  Phone,
-  MapPin,
-  User,
-  Building,
-  Scale,
-  Gavel,
-  FolderOpen,
-  Database,
-  Cloud,
-  Settings,
-  Bell,
-  Search,
   Plus,
-  Filter,
-  MoreHorizontal,
-  Wifi,
-  WifiOff,
-  CheckCircle2,
-  XCircle,
-  Info,
-  ChevronDown,
-  LogOut,
-  User as UserIcon,
-  Shield,
-  Activity
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -86,55 +37,7 @@ interface DashboardStats {
   completedTasks: number;
 }
 
-interface RecentCase {
-  id: string;
-  caseNumber: string;
-  title: string;
-  clientName: string;
-  status: string;
-  priority: string;
-  nextHearingDate?: Date;
-  lastUpdated: Date;
-}
-
-interface RecentClient {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  totalCases: number;
-  activeCases: number;
-  lastContact: Date;
-}
-
-interface UpcomingHearing {
-  id: string;
-  caseNumber: string;
-  caseTitle: string;
-  hearingDate: Date;
-  courtName: string;
-  courtLocation: string;
-  hearingType: string;
-}
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  assignedTo: string;
-  dueDate: Date;
-  status: string;
-  priority: string;
-  caseNumber?: string;
-}
-
-interface SystemStatus {
-  mongodb: boolean;
-  emailService: boolean;
-}
-
 export default function Dashboard() {
-  const { data: session, status } = useSession();
   const [stats, setStats] = useState<DashboardStats>({
     totalCases: 0,
     activeCases: 0,
@@ -147,24 +50,11 @@ export default function Dashboard() {
     overdueTasks: 0,
     completedTasks: 0,
   });
-  const [recentCases, setRecentCases] = useState<RecentCase[]>([]);
-  const [recentClients, setRecentClients] = useState<RecentClient[]>([]);
-  const [upcomingHearings, setUpcomingHearings] = useState<UpcomingHearing[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sampleDataStatus, setSampleDataStatus] = useState<'idle' | 'creating' | 'success' | 'error'>('idle');
-  const [sampleDataMessage, setSampleDataMessage] = useState('');
-  const [systemStatus, setSystemStatus] = useState<SystemStatus>({
-    mongodb: false,
-    emailService: false,
-  });
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchDashboardData();
-      checkSystemStatus();
-    }
-  }, [status]);
+    fetchDashboardData();
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
@@ -176,77 +66,10 @@ export default function Dashboard() {
         const statsData = await statsResponse.json();
         setStats(statsData);
       }
-
-      // Fetch recent cases
-      const casesResponse = await fetch('/api/dashboard/recent-cases');
-      if (casesResponse.ok) {
-        const casesData = await casesResponse.json();
-        setRecentCases(casesData);
-      }
-
-      // Fetch recent clients
-      const clientsResponse = await fetch('/api/dashboard/recent-clients');
-      if (clientsResponse.ok) {
-        const clientsData = await clientsResponse.json();
-        setRecentClients(clientsData);
-      }
-
-      // Fetch upcoming hearings
-      const hearingsResponse = await fetch('/api/dashboard/upcoming-hearings');
-      if (hearingsResponse.ok) {
-        const hearingsData = await hearingsResponse.json();
-        setUpcomingHearings(hearingsData);
-      }
-
-      // Fetch tasks
-      const tasksResponse = await fetch('/api/dashboard/tasks');
-      if (tasksResponse.ok) {
-        const tasksData = await tasksResponse.json();
-        setTasks(tasksData);
-      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const checkSystemStatus = async () => {
-    try {
-      const response = await fetch('/api/system/status');
-      if (response.ok) {
-        const statusData = await response.json();
-        setSystemStatus({
-          mongodb: statusData.mongodb,
-          emailService: statusData.emailService,
-        });
-      }
-    } catch (error) {
-      console.error('Error checking system status:', error);
-    }
-  };
-
-  const handleCreateSampleData = async () => {
-    try {
-      setSampleDataStatus('creating');
-      setSampleDataMessage('Creating sample data...');
-      
-      const response = await fetch('/api/sample-data', {
-        method: 'POST',
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        setSampleDataStatus('success');
-        setSampleDataMessage(`Sample data created! ${result.clients} clients, ${result.cases} cases`);
-        fetchDashboardData();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create sample data');
-      }
-    } catch (error) {
-      setSampleDataStatus('error');
-      setSampleDataMessage(error instanceof Error ? error.message : 'Failed to create sample data');
     }
   };
 
@@ -270,63 +93,11 @@ export default function Dashboard() {
     alert('Upload Document functionality coming soon!');
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'on_hold':
-        return 'bg-orange-100 text-orange-800';
-      case 'settled':
-        return 'bg-blue-100 text-blue-800';
-      case 'dismissed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case 'urgent':
-        return 'bg-red-100 text-red-800';
-      case 'high':
-        return 'bg-orange-100 text-orange-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
-  };
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const formatDateTime = (date: Date) => {
-    return new Date(date).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   };
 
   const caseTypeData = [
@@ -337,7 +108,7 @@ export default function Dashboard() {
     { type: 'Property', cases: 8 },
   ];
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
@@ -345,36 +116,9 @@ export default function Dashboard() {
     );
   }
 
-  if (status === 'unauthenticated') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Please sign in to access the dashboard.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <a href="/auth/signin">Sign In</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <>
     
-      {/* Status Alerts */}
-      {sampleDataStatus !== 'idle' && (
-        <Alert className={sampleDataStatus === 'success' ? 'border-green-200 bg-green-50' : sampleDataStatus === 'error' ? 'border-red-200 bg-red-50' : 'border-blue-200 bg-blue-50'}>
-          <AlertDescription className={sampleDataStatus === 'success' ? 'text-green-800' : sampleDataStatus === 'error' ? 'text-red-800' : 'text-blue-800'}>
-            {sampleDataMessage}
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card>
@@ -488,15 +232,6 @@ export default function Dashboard() {
               <div className="text-center py-8 text-gray-500">
                 <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p>No cases found. Create your first case to get started.</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={handleCreateSampleData}
-                  disabled={sampleDataStatus === 'creating'}
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  Create Sample Data
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -519,15 +254,6 @@ export default function Dashboard() {
               <div className="text-center py-8 text-gray-500">
                 <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p>No clients found. Add your first client to get started.</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={handleCreateSampleData}
-                  disabled={sampleDataStatus === 'creating'}
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  Create Sample Data
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -550,15 +276,6 @@ export default function Dashboard() {
               <div className="text-center py-8 text-gray-500">
                 <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p>No upcoming hearings found. Schedule your first hearing to get started.</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={handleCreateSampleData}
-                  disabled={sampleDataStatus === 'creating'}
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  Create Sample Data
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -575,15 +292,6 @@ export default function Dashboard() {
               <div className="text-center py-8 text-gray-500">
                 <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p>No tasks found. Create your first task to get started.</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={handleCreateSampleData}
-                  disabled={sampleDataStatus === 'creating'}
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  Create Sample Data
-                </Button>
               </div>
             </CardContent>
           </Card>

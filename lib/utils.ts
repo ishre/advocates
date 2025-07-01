@@ -6,33 +6,37 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Tenant isolation utilities
-export function getTenantId(user: any): string | null {
-  // If user is a main advocate, use their own ID (id from session or _id from DB)
-  const id = user.id || (user._id && user._id.toString());
-  if (user.isMainAdvocate || (!user.advocateId && user.roles.includes('advocate'))) {
-    return id;
+export function getTenantId(user: unknown): string | null {
+  const u = user as { id?: string; _id?: string; isMainAdvocate?: boolean; advocateId?: string; roles: string[] };
+  const id = u.id || (u._id && u._id.toString());
+  if (u.isMainAdvocate || (!u.advocateId && u.roles.includes('advocate'))) {
+    return id || null;
   }
-  // If user is a team member or client, use their advocate's ID
-  return user.advocateId || null;
+  return u.advocateId || null;
 }
 
-export function canAccessTenant(user: any, tenantId: string): boolean {
-  const userTenantId = getTenantId(user);
+export function canAccessTenant(user: unknown, tenantId: string): boolean {
+  const u = user as { id?: string; _id?: string; isMainAdvocate?: boolean; advocateId?: string; roles: string[] };
+  const userTenantId = getTenantId(u);
   return userTenantId === tenantId;
 }
 
-export function isMainAdvocate(user: any): boolean {
-  return user.isMainAdvocate || (!user.advocateId && user.roles.includes('advocate'));
+export function isMainAdvocate(user: unknown): boolean {
+  const u = user as { isMainAdvocate?: boolean; advocateId?: string; roles: string[] };
+  return u.isMainAdvocate || (!u.advocateId && u.roles.includes('advocate'));
 }
 
-export function isTeamMember(user: any): boolean {
-  return user.roles.includes('team_member');
+export function isTeamMember(user: unknown): boolean {
+  const u = user as { roles: string[] };
+  return u.roles.includes('team_member');
 }
 
-export function isClient(user: any): boolean {
-  return user.roles.includes('client');
+export function isClient(user: unknown): boolean {
+  const u = user as { roles: string[] };
+  return u.roles.includes('client');
 }
 
-export function hasRole(user: any, role: string): boolean {
-  return user.roles.includes(role);
+export function hasRole(user: unknown, role: string): boolean {
+  const u = user as { roles: string[] };
+  return u.roles.includes(role);
 }

@@ -5,7 +5,6 @@ import ParticularsDropdown from "./CaseFormFields/ParticularsDropdown";
 import StageDropdown from "./CaseFormFields/StageDropdown";
 import ClientSelector from "./CaseFormFields/ClientSelector";
 import DatePicker from "./CaseFormFields/DatePicker";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type Client = {
   _id: string;
@@ -25,7 +24,6 @@ const CaseForm: React.FC = () => {
   const [stage, setStage] = useState("");
   const [nextDate, setNextDate] = useState<Date | null>(null);
   const [client, setClient] = useState<Client | null>(null);
-  const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,11 +32,6 @@ const CaseForm: React.FC = () => {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <DatePicker label="Registration Date" value={registrationDate} onChange={setRegistrationDate} />
         <DatePicker label="Previous Date" value={previousDate} onChange={setPreviousDate} />

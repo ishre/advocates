@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Eye, Trash2 } from "lucide-react";
 import NewClientForm from "@/components/forms/NewClientForm";
 
@@ -101,8 +101,9 @@ export default function ClientsPage() {
       const res = await fetch(`/api/cases?${params.toString()}`);
       const data = await res.json();
       setClientCases(data.cases || []);
-    } catch (err) {
+    } catch (err: unknown) {
       setClientCases([]);
+      setError(err instanceof Error ? err.message : 'Failed to fetch cases');
     } finally {
       setCasesLoading(false);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,18 +12,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
-export default function SignInPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const router = useRouter();
+function SignInFormWithParams({
+  setError,
+  setSuccess,
+}: {
+  setError: React.Dispatch<React.SetStateAction<string>>;
+  setSuccess: React.Dispatch<React.SetStateAction<string>>;
+}) {
   const searchParams = useSearchParams();
-
-  // Handle error messages from URL params (e.g., OAuth errors)
   useEffect(() => {
     const errorParam = searchParams.get('error');
     const successParam = searchParams.get('success');
@@ -89,7 +85,19 @@ export default function SignInPage() {
           setSuccess('Operation completed successfully!');
       }
     }
-  }, [searchParams]);
+  }, [searchParams, setError, setSuccess]);
+  return null;
+}
+
+export default function SignInPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const router = useRouter();
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,7 +190,9 @@ export default function SignInPage() {
             Sign in to your account to continue
           </p>
         </div>
-
+        <Suspense fallback={null}>
+          <SignInFormWithParams setError={setError} setSuccess={setSuccess} />
+        </Suspense>
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Sign in</CardTitle>

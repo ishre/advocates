@@ -1,18 +1,17 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MoreHorizontal, Eye, Pencil, Trash2, Save, X, Plus, Search, Filter, Calendar } from "lucide-react";
+import { MoreHorizontal, Eye, Pencil, Trash2, X, Plus, Search, Filter } from "lucide-react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useRouter } from "next/navigation";
 import NewCaseForm from "@/components/forms/NewCaseForm";
 
 interface Case {
@@ -23,7 +22,7 @@ interface Case {
   caseType: 'civil' | 'criminal' | 'family' | 'corporate' | 'property' | 'other';
   status: 'active' | 'closed' | 'pending' | 'on_hold' | 'settled' | 'dismissed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  clientId: any;
+  clientId: unknown;
   clientName: string;
   clientEmail: string;
   clientPhone: string;
@@ -42,26 +41,26 @@ interface Case {
     pendingAmount: number;
     currency: string;
   };
-  assignedTo: any[];
-  createdBy: any;
+  assignedTo: unknown[];
+  createdBy: unknown;
   documents: Array<{
     name: string;
     type: string;
     size: number;
     url: string;
     uploadedAt: string;
-    uploadedBy: any;
+    uploadedBy: unknown;
   }>;
   notes: Array<{
     content: string;
-    createdBy: any;
+    createdBy: unknown;
     createdAt: string;
     isPrivate: boolean;
   }>;
   tasks: Array<{
     title: string;
     description: string;
-    assignedTo: any;
+    assignedTo: unknown;
     dueDate: string;
     status: 'pending' | 'in_progress' | 'completed' | 'overdue';
     priority: 'low' | 'medium' | 'high';
@@ -74,6 +73,14 @@ interface Case {
   year: number;
   createdAt: string;
   updatedAt: string;
+}
+
+// Define a type for filters
+interface CaseFilters {
+  status: string[];
+  priority: string[];
+  dateFrom: string;
+  dateTo: string;
 }
 
 // Actions component with integrated filters
@@ -90,8 +97,8 @@ function CaseActions({
   onSearchChange: (value: string) => void;
   onSearch: (e: React.FormEvent) => void;
   onCreateCase: () => void;
-  filters: { status: string[]; priority: string[]; dateFrom: string; dateTo: string };
-  onFilterChange: (filters: any) => void;
+  filters: CaseFilters;
+  onFilterChange: (filters: CaseFilters) => void;
   onRemoveFilter: (key: string, value?: string) => void;
 }) {
   const hasActiveFilters = (filters.status && filters.status.length > 0) || (filters.priority && filters.priority.length > 0) || filters.dateFrom || filters.dateTo;
@@ -353,7 +360,6 @@ function CaseActions({
 }
 
 export default function AllCasesPage() {
-  const router = useRouter();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -362,16 +368,16 @@ export default function AllCasesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [filters, setFilters] = useState({ status: [], priority: [], dateFrom: "", dateTo: "" });
+  const [filters, setFilters] = useState<CaseFilters>({ status: [], priority: [], dateFrom: "", dateTo: "" });
   const [viewCase, setViewCase] = useState<Case | null>(null);
   const [editCase, setEditCase] = useState<Case | null>(null);
   const [deleteCase, setDeleteCase] = useState<Case | null>(null);
-  const [editForm, setEditForm] = useState<any>(null);
+  const [editForm, setEditForm] = useState<Partial<Case> | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const fetchCases = async () => {
+  const fetchCases = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -389,12 +395,16 @@ export default function AllCasesPage() {
       if (!res.ok) throw new Error(data.error || "Failed to fetch cases");
       setCases(data.cases || []);
       setTotalPages(data.pagination?.pages || 1);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch cases");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to fetch cases");
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, search, filters]);
 
   const fetchCaseDetails = async (caseId: string) => {
     try {
@@ -402,16 +412,19 @@ export default function AllCasesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to fetch case details");
       return data.case;
-    } catch (err: any) {
-      console.error("Error fetching case details:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error fetching case details:", err.message);
+      } else {
+        console.error("Error fetching case details: Unknown error");
+      }
       return null;
     }
   };
 
   useEffect(() => {
     fetchCases();
-    // eslint-disable-next-line
-  }, [page, limit, search, filters]);
+  }, [fetchCases]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -419,7 +432,7 @@ export default function AllCasesPage() {
     setSearch(searchInput);
   };
 
-  const handleFilterChange = (newFilters: any) => {
+  const handleFilterChange = (newFilters: CaseFilters) => {
     setFilters(newFilters);
     setPage(1);
   };
@@ -511,8 +524,12 @@ export default function AllCasesPage() {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update case');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to update case');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to update case');
+      }
     } finally {
       setEditLoading(false);
     }
@@ -534,8 +551,12 @@ export default function AllCasesPage() {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to delete case');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete case');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to delete case');
+      }
     } finally {
       setDeleteLoading(false);
     }
@@ -768,7 +789,7 @@ export default function AllCasesPage() {
                                       </div>
                                       <div>
                                         <Label htmlFor="caseType">Case Type</Label>
-                                        <Select value={editForm.caseType} onValueChange={val => setEditForm({ ...editForm, caseType: val })}>
+                                        <Select value={editForm.caseType ?? undefined} onValueChange={val => setEditForm({ ...editForm, caseType: val as Case['caseType'] })}>
                                           <SelectTrigger>
                                             <SelectValue />
                                           </SelectTrigger>
@@ -784,7 +805,7 @@ export default function AllCasesPage() {
                                       </div>
                                       <div>
                                         <Label htmlFor="status">Status</Label>
-                                        <Select value={editForm.status} onValueChange={val => setEditForm({ ...editForm, status: val })}>
+                                        <Select value={editForm.status ?? undefined} onValueChange={val => setEditForm({ ...editForm, status: val as Case['status'] })}>
                                           <SelectTrigger>
                                             <SelectValue />
                                           </SelectTrigger>
@@ -800,7 +821,7 @@ export default function AllCasesPage() {
                                       </div>
                                       <div>
                                         <Label htmlFor="priority">Priority</Label>
-                                        <Select value={editForm.priority} onValueChange={val => setEditForm({ ...editForm, priority: val })}>
+                                        <Select value={editForm.priority ?? undefined} onValueChange={val => setEditForm({ ...editForm, priority: val as Case['priority'] })}>
                                           <SelectTrigger>
                                             <SelectValue />
                                           </SelectTrigger>
@@ -944,7 +965,9 @@ export default function AllCasesPage() {
                                             fees: {
                                               ...editForm.fees,
                                               totalAmount: parseFloat(e.target.value) || 0,
-                                              pendingAmount: (parseFloat(e.target.value) || 0) - (editForm.fees?.paidAmount || 0)
+                                              paidAmount: editForm.fees && typeof editForm.fees.paidAmount === 'number' ? editForm.fees.paidAmount : 0,
+                                              pendingAmount: (parseFloat(e.target.value) || 0) - (editForm.fees && typeof editForm.fees.paidAmount === 'number' ? editForm.fees.paidAmount : 0),
+                                              currency: editForm.fees && typeof editForm.fees.currency === 'string' ? editForm.fees.currency : 'USD',
                                             }
                                           })}
                                         />
@@ -960,8 +983,10 @@ export default function AllCasesPage() {
                                             ...editForm,
                                             fees: {
                                               ...editForm.fees,
+                                              totalAmount: editForm.fees && typeof editForm.fees.totalAmount === 'number' ? editForm.fees.totalAmount : 0,
                                               paidAmount: parseFloat(e.target.value) || 0,
-                                              pendingAmount: (editForm.fees?.totalAmount || 0) - (parseFloat(e.target.value) || 0)
+                                              pendingAmount: (editForm.fees && typeof editForm.fees.totalAmount === 'number' ? editForm.fees.totalAmount : 0) - (parseFloat(e.target.value) || 0),
+                                              currency: editForm.fees && typeof editForm.fees.currency === 'string' ? editForm.fees.currency : 'USD',
                                             }
                                           })}
                                         />
@@ -978,9 +1003,15 @@ export default function AllCasesPage() {
                                       </div>
                                       <div>
                                         <Label htmlFor="currency">Currency</Label>
-                                        <Select value={editForm.fees?.currency || 'USD'} onValueChange={val => setEditForm({
+                                        <Select value={editForm.fees?.currency ?? undefined} onValueChange={val => setEditForm({
                                           ...editForm,
-                                          fees: { ...editForm.fees, currency: val }
+                                          fees: {
+                                            ...editForm.fees,
+                                            totalAmount: editForm.fees && typeof editForm.fees.totalAmount === 'number' ? editForm.fees.totalAmount : 0,
+                                            paidAmount: editForm.fees && typeof editForm.fees.paidAmount === 'number' ? editForm.fees.paidAmount : 0,
+                                            pendingAmount: editForm.fees && typeof editForm.fees.pendingAmount === 'number' ? editForm.fees.pendingAmount : 0,
+                                            currency: val,
+                                          }
                                         })}>
                                           <SelectTrigger>
                                             <SelectValue />

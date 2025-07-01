@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,21 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+
+function ResetPasswordParams({ setToken, setEmail, setError }: { setToken: (t: string) => void, setEmail: (e: string) => void, setError: (e: string) => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const tokenParam = searchParams.get('token');
+    const emailParam = searchParams.get('email');
+    if (!tokenParam || !emailParam) {
+      setError('Invalid reset link. Please request a new password reset.');
+      return;
+    }
+    setToken(tokenParam);
+    setEmail(emailParam);
+  }, [searchParams, setToken, setEmail, setError]);
+  return null;
+}
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -21,20 +36,6 @@ export default function ResetPasswordPage() {
   const [token, setToken] = useState('');
   const [email, setEmail] = useState('');
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const tokenParam = searchParams.get('token');
-    const emailParam = searchParams.get('email');
-
-    if (!tokenParam || !emailParam) {
-      setError('Invalid reset link. Please request a new password reset.');
-      return;
-    }
-
-    setToken(tokenParam);
-    setEmail(emailParam);
-  }, [searchParams]);
 
   const validateForm = (): string | null => {
     if (password.length < 8) return 'Password must be at least 8 characters long';
@@ -134,7 +135,9 @@ export default function ResetPasswordPage() {
             Reset your password
           </p>
         </div>
-
+        <Suspense fallback={null}>
+          <ResetPasswordParams setToken={setToken} setEmail={setEmail} setError={setError} />
+        </Suspense>
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Reset Password</CardTitle>

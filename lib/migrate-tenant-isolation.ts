@@ -1,7 +1,6 @@
 import { connectToDatabase } from './mongodb';
 import User from './models/User';
 import Case from './models/Case';
-import Client from './models/Client';
 
 async function migrateTenantIsolation() {
   try {
