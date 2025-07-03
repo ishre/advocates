@@ -1,5 +1,5 @@
 # 🛠️ Setup Guide
-
+# test git
 ## Environment Variables Configuration
 
 Create a `.env.local` file in the root directory with the following variables:
