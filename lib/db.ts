@@ -18,7 +18,8 @@ if (!globalWithMongoose.mongooseCache) {
 }
 
 async function dbConnect() {
-  if (cached.conn) {
+  // If already connected, return immediately
+  if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
   }
 
@@ -26,8 +27,8 @@ async function dbConnect() {
     const opts = {
       bufferCommands: false,
     };
-
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log('Connected to MongoDB');
       return mongoose;
     });
   }
@@ -37,6 +38,14 @@ async function dbConnect() {
   } catch (e) {
     cached.promise = null;
     throw e;
+  }
+
+  // Wait until readyState is 1 (connected)
+  if (mongoose.connection.readyState !== 1) {
+    await new Promise((resolve, reject) => {
+      mongoose.connection.once('connected', resolve);
+      mongoose.connection.once('error', reject);
+    });
   }
 
   return cached.conn;

@@ -76,25 +76,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ],
     },
     {
-      title: "Clients",
-      url: "/dashboard/clients",
-      icon: Users,
-      items: [
-        {
-          title: "All Clients",
-          url: "/dashboard/clients",
-        },
-        {
-          title: "Active Clients",
-          url: "/dashboard/clients/active",
-        },
-        {
-          title: "Add Client",
-          url: "/dashboard/clients/new",
-        },
-      ],
-    },
-    {
       title: "Documents",
       url: "/dashboard/documents",
       icon: FileText,
@@ -110,6 +91,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {
           title: "Templates",
           url: "/dashboard/documents/templates",
+        },
+      ],
+    },
+    {
+      title: "Clients",
+      url: "/dashboard/clients",
+      icon: Users,
+      items: [
+        {
+          title: "All Clients",
+          url: "/dashboard/clients",
+        },
+        {
+          title: "Active Clients",
+          url: "/dashboard/clients/active",
+        },
+        {
+          title: "Add Client",
+          url: "/dashboard/clients/new",
         },
       ],
     },

@@ -580,6 +580,72 @@ If you have any questions, please contact ${deletionData.advocateName}
       text,
     });
   }
+
+  /**
+   * Send a professional document deletion notification email
+   */
+  async sendDocumentDeletionNotification(
+    to: string,
+    documentData: {
+      caseNumber: string;
+      caseTitle: string;
+      documentName: string;
+      documentType: string;
+      deletedBy: string;
+      deletedAt: Date;
+    }
+  ): Promise<boolean> {
+    const subject = `Document Deleted: ${documentData.documentName} (Case ${documentData.caseNumber})`;
+    const html = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb;">
+        <div style="background: #b91c1c; color: #fff; padding: 24px 32px; text-align: center;">
+          <h1 style="margin: 0; font-size: 2rem; letter-spacing: 1px;">Lexapro Case Manager</h1>
+          <p style="margin: 8px 0 0 0; font-size: 1.1rem;">Document Deletion Notification</p>
+        </div>
+        <div style="padding: 32px; background: #fff;">
+          <h2 style="color: #b91c1c; margin-top: 0; font-size: 1.3rem;">A Document Was Deleted</h2>
+          <div style="background: #fee2e2; padding: 18px; border-radius: 8px; border-left: 5px solid #b91c1c; margin-bottom: 24px;">
+            <h3 style="color: #b91c1c; margin: 0 0 8px 0; font-size: 1.1rem;">Document Deleted</h3>
+            <p style="margin: 0; color: #991b1b;">A document was deleted from your case file. If this was not intended, please contact your advocate immediately.</p>
+          </div>
+          <table style="width: 100%; font-size: 1rem; color: #1e293b; background: #f9fafb; border-radius: 8px; margin-bottom: 24px;">
+            <tbody>
+              <tr><td style="padding: 8px 0; font-weight: 600;">Case Number:</td><td>${documentData.caseNumber}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600;">Case Title:</td><td>${documentData.caseTitle}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600;">Document Name:</td><td>${documentData.documentName}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600;">Document Type:</td><td>${documentData.documentType}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600;">Deleted By:</td><td>${documentData.deletedBy}</td></tr>
+              <tr><td style="padding: 8px 0; font-weight: 600;">Deleted At:</td><td>${new Date(documentData.deletedAt).toLocaleString()}</td></tr>
+            </tbody>
+          </table>
+          <p style="color: #64748b; font-size: 0.98rem;">If you have any questions or concerns, please reply to this email or contact your legal team.</p>
+        </div>
+        <div style="background: #b91c1c; color: #fff; padding: 18px 32px; text-align: center; font-size: 0.95rem;">
+          <p style="margin: 0;">&copy; ${new Date().getFullYear()} Lexapro Case Manager. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+    const text = `
+Document Deleted: ${documentData.documentName} (Case ${documentData.caseNumber})
+
+A document was deleted from your case file.
+
+Case Number: ${documentData.caseNumber}
+Case Title: ${documentData.caseTitle}
+Document Name: ${documentData.documentName}
+Document Type: ${documentData.documentType}
+Deleted By: ${documentData.deletedBy}
+Deleted At: ${new Date(documentData.deletedAt).toLocaleString()}
+
+If this was not intended, please contact your advocate immediately.
+`;
+    return this.sendEmail({
+      to,
+      subject,
+      html,
+      text,
+    });
+  }
 }
 
 // Singleton instance

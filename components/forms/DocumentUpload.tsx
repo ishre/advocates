@@ -13,6 +13,7 @@ import { X, Save, Upload } from 'lucide-react';
 interface DocumentUploadProps {
   onClose: () => void;
   onSuccess: () => void;
+  caseId?: string;
 }
 
 interface Case {
@@ -25,25 +26,17 @@ interface Case {
   };
 }
 
-export default function DocumentUpload({ onClose, onSuccess }: DocumentUploadProps) {
+export default function DocumentUpload({ onClose, onSuccess, caseId }: DocumentUploadProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [cases, setCases] = useState<Case[]>([]);
-  const [selectedCase, setSelectedCase] = useState<string>('');
+  const [selectedCase, setSelectedCase] = useState<string>(caseId || '');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    documentType: '',
-    date: '',
-    tags: '',
-  });
-
   useEffect(() => {
-    fetchCases();
-  }, []);
+    if (!caseId) fetchCases();
+  }, [caseId]);
 
   const fetchCases = async () => {
     try {
@@ -80,26 +73,16 @@ export default function DocumentUpload({ onClose, onSuccess }: DocumentUploadPro
       setError('Please select a case');
       return;
     }
-
     setLoading(true);
     setError('');
-
     try {
-      // Create FormData for file upload
       const formDataToSend = new FormData();
       formDataToSend.append('file', selectedFile);
       formDataToSend.append('caseId', selectedCase);
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('documentType', formData.documentType);
-      formDataToSend.append('date', formData.date);
-      formDataToSend.append('tags', formData.tags);
-
       const response = await fetch('/api/documents/upload', {
         method: 'POST',
         body: formDataToSend,
       });
-
       if (response.ok) {
         setSuccess(true);
         setTimeout(() => {
@@ -161,7 +144,6 @@ export default function DocumentUpload({ onClose, onSuccess }: DocumentUploadPro
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-
             {/* File Upload */}
             <div className="space-y-2">
               <Label htmlFor="file">Select File *</Label>
@@ -192,89 +174,22 @@ export default function DocumentUpload({ onClose, onSuccess }: DocumentUploadPro
                 )}
               </div>
             </div>
-
             {/* Case Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="case">Select Case *</Label>
-              <Select value={selectedCase} onValueChange={setSelectedCase}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a case" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cases.map((caseItem) => (
-                    <SelectItem key={caseItem._id} value={caseItem._id}>
-                      {caseItem.caseNumber} - {caseItem.title} ({caseItem.clientId.name})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Document Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {caseId ? null : (
               <div className="space-y-2">
-                <Label htmlFor="title">Document Title *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Document title"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="documentType">Document Type</Label>
-                <Select value={formData.documentType} onValueChange={(value) => setFormData({ ...formData, documentType: value })}>
+                <Label htmlFor="case">Select Case *</Label>
+                <Select value={selectedCase} onValueChange={setSelectedCase}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select document type" />
+                    <SelectValue placeholder="Select a case" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="contract">Contract</SelectItem>
-                    <SelectItem value="evidence">Evidence</SelectItem>
-                    <SelectItem value="motion">Motion</SelectItem>
-                    <SelectItem value="brief">Legal Brief</SelectItem>
-                    <SelectItem value="correspondence">Correspondence</SelectItem>
-                    <SelectItem value="court_order">Court Order</SelectItem>
-                    <SelectItem value="witness_statement">Witness Statement</SelectItem>
-                    <SelectItem value="expert_report">Expert Report</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    {cases.map((c) => (
+                      <SelectItem key={c._id} value={c._id}>{c.caseNumber} - {c.title}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="date">Document Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tags">Tags</Label>
-                <Input
-                  id="tags"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder="important, evidence, confidential"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description of the document"
-                rows={3}
-              />
-            </div>
-
+            )}
             {/* Form Actions */}
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={onClose}>

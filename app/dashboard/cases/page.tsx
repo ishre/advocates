@@ -8,11 +8,15 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MoreHorizontal, Eye, Pencil, Trash2, X, Plus, Search, Filter } from "lucide-react";
+import { MoreHorizontal, Eye, Pencil, Trash2, X, Plus, Search, Filter, Upload } from "lucide-react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import NewCaseForm from "@/components/forms/NewCaseForm";
+import DocumentUpload from '@/components/forms/DocumentUpload';
+import QuickDocumentUpload from '@/components/forms/QuickDocumentUpload';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface Case {
   _id: string;
@@ -376,6 +380,12 @@ export default function AllCasesPage() {
   const [editLoading, setEditLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [uploadCaseId, setUploadCaseId] = useState<string | null>(null);
+  const [deleteDoc, setDeleteDoc] = useState<{ caseId: string; documentName: string } | null>(null);
+  const [deleteDocLoading, setDeleteDocLoading] = useState(false);
+  const [deleteDocError, setDeleteDocError] = useState('');
+  const [viewDoc, setViewDoc] = useState<{ url: string; name: string; type: string } | null>(null);
 
   const fetchCases = useCallback(async () => {
     setLoading(true);
@@ -562,6 +572,33 @@ export default function AllCasesPage() {
     }
   };
 
+  const handleDeleteDoc = async () => {
+    if (!deleteDoc) return;
+    setDeleteDocLoading(true);
+    setDeleteDocError('');
+    try {
+      const res = await fetch('/api/documents', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(deleteDoc),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to delete document');
+      }
+      setDeleteDoc(null);
+      if (viewCase) {
+        // Refresh the case details
+        const refreshed = await fetchCaseDetails(viewCase._id);
+        if (refreshed) setViewCase(refreshed);
+      }
+    } catch (err: any) {
+      setDeleteDocError(err.message || 'Failed to delete document');
+    } finally {
+      setDeleteDocLoading(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Not set';
     return new Date(dateString).toLocaleDateString();
@@ -587,6 +624,20 @@ export default function AllCasesPage() {
       case 'low': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleOpenDocumentUpload = (caseId: string) => {
+    setUploadCaseId(caseId);
+    setShowDocumentUpload(true);
+  };
+  const handleCloseDocumentUpload = () => {
+    setShowDocumentUpload(false);
+    setUploadCaseId(null);
+  };
+  const handleDocumentUploadSuccess = () => {
+    setShowDocumentUpload(false);
+    setUploadCaseId(null);
+    fetchCases();
   };
 
   return (
@@ -640,8 +691,8 @@ export default function AllCasesPage() {
                     </TableCell>
                     <TableCell>{formatDate(c.createdAt)}</TableCell>
                     <TableCell>
-                      {/* Desktop: show separate buttons */}
-                      <div className="hidden md:inline-flex gap-2">
+                      <div className="inline-flex gap-2">
+                        {/* View Button */}
                         <Dialog open={!!viewCase && viewCase._id === c._id} onOpenChange={open => !open && setViewCase(null)}>
                           <DialogTrigger asChild>
                             <Button size="sm" variant="outline" onClick={() => handleViewCase(c)}><Eye className="w-4 h-4 mr-1" /> View</Button>
@@ -717,8 +768,20 @@ export default function AllCasesPage() {
                                     {viewCase.documents && viewCase.documents.length > 0 ? (
                                       <div className="mt-2 space-y-2">
                                         {viewCase.documents.map((doc, idx) => (
-                                          <div key={idx} className="text-sm p-2 bg-muted rounded">
-                                            {doc.name} ({doc.type}) - {new Date(doc.uploadedAt).toLocaleDateString()}
+                                          <div key={idx} className="text-sm p-2 bg-muted rounded flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <Button variant="ghost" size="icon" onClick={() => setViewDoc({ url: doc.url, name: doc.name, type: doc.type })} title="View Document">
+                                                <Eye className="w-5 h-5" />
+                                              </Button>
+                                              <span>{doc.name}</span>
+                                              <span className="ml-2 text-xs text-gray-500">({doc.type})</span>
+                                              <span className="ml-2 text-xs text-gray-400">{new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                                            </div>
+                                            <div className="flex gap-2">
+                                              <Button variant="destructive" size="sm" onClick={() => setDeleteDoc({ caseId: viewCase._id, documentName: doc.name })}>
+                                                Delete
+                                              </Button>
+                                            </div>
                                           </div>
                                         ))}
                                       </div>
@@ -726,6 +789,44 @@ export default function AllCasesPage() {
                                       <p className="text-sm text-muted-foreground">No documents uploaded</p>
                                     )}
                                   </div>
+                                  {/* Document Viewer Sheet (scoped to case view) */}
+                                  <Sheet open={!!viewDoc} onOpenChange={() => setViewDoc(null)}>
+                                    <SheetContent side="bottom" className="h-screen w-screen p-0 m-0">
+                                      <SheetHeader className="p-4 pb-0 ">
+                                        <SheetTitle>View Document</SheetTitle>
+                                      </SheetHeader>
+                                      {viewDoc && (
+                                        <div className="w-full h-full flex flex-col items-center justify-center">
+                                          {viewDoc.type === 'application/pdf' ? (
+                                            <iframe src={viewDoc.url} title="PDF Preview" className="w-full h-full rounded border" />
+                                          ) : viewDoc.type.startsWith('image/') ? (
+                                            <img src={viewDoc.url} alt={viewDoc.name} className="max-h-full max-w-full rounded border" />
+                                          ) : (
+                                            <div className="flex flex-col items-center justify-center w-full h-full">
+                                              <p className="mb-2">Preview not available for this file type.</p>
+                                              <a href={viewDoc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Download</a>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </SheetContent>
+                                  </Sheet>
+                                  {/* Delete Confirmation Dialog */}
+                                  <Dialog open={!!deleteDoc} onOpenChange={() => setDeleteDoc(null)}>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>Delete Document</DialogTitle>
+                                      </DialogHeader>
+                                      {deleteDocError && <div className="text-red-600 mb-2">{deleteDocError}</div>}
+                                      <div>Are you sure you want to delete <b>{deleteDoc?.documentName}</b> from this case?</div>
+                                      <div className="flex justify-end gap-2 mt-6">
+                                        <Button variant="outline" onClick={() => setDeleteDoc(null)} disabled={deleteDocLoading}>Cancel</Button>
+                                        <Button variant="destructive" onClick={handleDeleteDoc} disabled={deleteDocLoading}>
+                                          {deleteDocLoading ? 'Deleting...' : 'Delete'}
+                                        </Button>
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
                                   <div>
                                     <b>Notes ({viewCase.notes?.length || 0}):</b>
                                     {viewCase.notes && viewCase.notes.length > 0 ? (
@@ -750,6 +851,7 @@ export default function AllCasesPage() {
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
+                        {/* Edit Button */}
                         <Dialog open={!!editCase && editCase._id === c._id} onOpenChange={open => !open && setEditCase(null)}>
                           <DialogTrigger asChild>
                             <Button size="sm" variant="secondary" onClick={() => handleEditCase(c)}><Pencil className="w-4 h-4 mr-1" /> Edit</Button>
@@ -1098,6 +1200,11 @@ export default function AllCasesPage() {
                             )}
                           </DialogContent>
                         </Dialog>
+                        {/* Upload Button */}
+                        <Button size="sm" variant="outline" onClick={() => handleOpenDocumentUpload(c._id)}>
+                          <Upload className="w-4 h-4 mr-1" /> Upload
+                        </Button>
+                        {/* Delete Button */}
                         <Dialog open={!!deleteCase && deleteCase._id === c._id} onOpenChange={open => !open && setDeleteCase(null)}>
                           <DialogTrigger asChild>
                             <Button size="sm" variant="destructive" onClick={() => setDeleteCase(c)}><Trash2 className="w-4 h-4 mr-1" /> Delete</Button>
@@ -1118,21 +1225,19 @@ export default function AllCasesPage() {
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
-                      </div>
-                      {/* Mobile: show dropdown */}
-                      <div className="inline-flex md:hidden">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewCase(c)}><Eye className="w-4 h-4 mr-2" /> View</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditCase(c)}><Pencil className="w-4 h-4 mr-2" /> Edit</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600" onClick={() => setDeleteCase(c)}><Trash2 className="w-4 h-4 mr-2" /> Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        {/* Upload Dialog */}
+                        <Dialog open={!!showDocumentUpload && uploadCaseId === c._id} onOpenChange={setShowDocumentUpload}>
+                          <DialogContent showCloseButton={false} className="max-w-[90vw] max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Upload Documents</DialogTitle>
+                            </DialogHeader>
+                            <QuickDocumentUpload
+                              caseId={c._id}
+                              onClose={handleCloseDocumentUpload}
+                              onSuccess={handleDocumentUploadSuccess}
+                            />
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     </TableCell>
                   </TableRow>
