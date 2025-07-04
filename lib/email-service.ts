@@ -440,57 +440,85 @@ If you have any questions, please contact our support team.
       name: string;
       advocateName: string;
       advocateEmail: string;
+      advocatePhone?: string;
+      advocateCompany?: string;
+      advocateImage?: string;
       tempPassword: string;
     }
   ): Promise<boolean> {
     const subject = 'Welcome to Legal Case Manager - Your Client Account';
     
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background-color: #1f2937; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0;">Legal Case Manager</h1>
-          <p style="margin: 10px 0 0 0;">Welcome to Your Client Account</p>
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb;">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: #fff; padding: 24px 32px; text-align: center;">
+          <h1 style="margin: 0; font-size: 2rem; letter-spacing: 1px;">Lexapro Case Manager</h1>
+          <p style="margin: 8px 0 0 0; font-size: 1.1rem;">Welcome to Your Client Account</p>
         </div>
         
-        <div style="padding: 20px; background-color: #f9fafb;">
-          <h2 style="color: #1f2937; margin-top: 0;">Hello, ${welcomeData.name}</h2>
+        <div style="padding: 32px; background: #fff;">
+          <h2 style="color: #1e40af; margin-top: 0; font-size: 1.3rem;">Hello, ${welcomeData.name}</h2>
           
-          <p>Welcome to Legal Case Manager! Your client account has been created by ${welcomeData.advocateName}.</p>
+          <p style="color: #374151; font-size: 1rem; line-height: 1.6;">Welcome to Lexapro Case Manager! Your client account has been created and you now have access to your legal case management portal.</p>
           
-          <div style="background-color: #ecfdf5; padding: 15px; border-radius: 8px; border-left: 4px solid #059669; margin: 20px 0;">
-            <h3 style="color: #059669; margin-top: 0;">Your Login Credentials</h3>
-            <p style="margin: 0;"><strong>Email:</strong> ${to}</p>
-            <p style="margin: 0;"><strong>Temporary Password:</strong> ${welcomeData.tempPassword}</p>
+          <div style="background: #ecfdf5; padding: 18px; border-radius: 8px; border-left: 5px solid #059669; margin: 20px 0;">
+            <h3 style="color: #059669; margin: 0 0 8px 0; font-size: 1.1rem;">Your Login Credentials</h3>
+            <p style="margin: 0; color: #065f46;"><strong>Email:</strong> ${to}</p>
+            <p style="margin: 0; color: #065f46;"><strong>Temporary Password:</strong> ${welcomeData.tempPassword}</p>
           </div>
           
-          <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
-            <h3 style="color: #92400e; margin-top: 0;">Important Security Notice</h3>
-            <p style="margin: 0;">Please change your password immediately after your first login for security purposes.</p>
+          <div style="background: #fef3c7; padding: 18px; border-radius: 8px; border-left: 5px solid #f59e0b; margin: 20px 0;">
+            <h3 style="color: #92400e; margin: 0 0 8px 0; font-size: 1.1rem;">Important Security Notice</h3>
+            <p style="margin: 0; color: #92400e;">Please change your password immediately after your first login for security purposes.</p>
           </div>
           
-          <div style="background-color: white; padding: 15px; border-radius: 8px;">
-            <h3 style="color: #1f2937; margin-top: 0;">What You Can Do</h3>
-            <ul style="margin: 0; padding-left: 20px;">
-              <li>View your case details and updates</li>
-              <li>Access important documents</li>
-              <li>Track hearing schedules</li>
-              <li>Communicate with your advocate</li>
+          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1e40af; margin: 0 0 12px 0; font-size: 1.1rem;">What You Can Do</h3>
+            <ul style="margin: 0; padding-left: 20px; color: #374151;">
+              <li style="margin-bottom: 6px;">View your case details and updates</li>
+              <li style="margin-bottom: 6px;">Access important documents</li>
+              <li style="margin-bottom: 6px;">Track hearing schedules</li>
+              <li style="margin-bottom: 6px;">Communicate with your advocate</li>
             </ul>
           </div>
+          
+          <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border: 1px solid #0ea5e9; margin: 20px 0;">
+            <h3 style="color: #0c4a6e; margin: 0 0 12px 0; font-size: 1.1rem;">Your Advocate</h3>
+            <div style="display: flex; align-items: center; gap: 16px;">
+              ${welcomeData.advocateImage ? `
+                <div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; background: #e5e7eb; display: flex; align-items: center; justify-content: center;">
+                  <img src="${welcomeData.advocateImage}" alt="${welcomeData.advocateName}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                  <div style="display: none; width: 100%; height: 100%; background: #3b82f6; color: white; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem;">
+                    ${welcomeData.advocateName.charAt(0).toUpperCase()}
+                  </div>
+                </div>
+              ` : `
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem;">
+                  ${welcomeData.advocateName.charAt(0).toUpperCase()}
+                </div>
+              `}
+              <div style="flex: 1;">
+                <h4 style="margin: 0 0 4px 0; color: #1e40af; font-size: 1.1rem;">${welcomeData.advocateName}</h4>
+                <p style="margin: 0 0 2px 0; color: #6b7280; font-size: 0.9rem;">${welcomeData.advocateCompany || 'Legal Advocate'}</p>
+                <p style="margin: 0 0 2px 0; color: #6b7280; font-size: 0.9rem;">📧 ${welcomeData.advocateEmail}</p>
+                ${welcomeData.advocatePhone ? `<p style="margin: 0; color: #6b7280; font-size: 0.9rem;">📞 ${welcomeData.advocatePhone}</p>` : ''}
+              </div>
+            </div>
+          </div>
         </div>
         
-        <div style="background-color: #1f2937; color: white; padding: 20px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: #fff; padding: 18px 32px; text-align: center; font-size: 0.95rem;">
           <p style="margin: 0;">If you have any questions, please contact ${welcomeData.advocateName} at ${welcomeData.advocateEmail}</p>
+          <p style="margin: 8px 0 0 0; font-size: 0.9rem;">&copy; ${new Date().getFullYear()} Lexapro Case Manager. All rights reserved.</p>
         </div>
       </div>
     `;
 
     const text = `
-Welcome to Legal Case Manager - Your Client Account
+Welcome to Lexapro Case Manager - Your Client Account
 
 Hello ${welcomeData.name},
 
-Welcome to Legal Case Manager! Your client account has been created by ${welcomeData.advocateName}.
+Welcome to Lexapro Case Manager! Your client account has been created and you now have access to your legal case management portal.
 
 Your Login Credentials:
 - Email: ${to}
@@ -504,6 +532,12 @@ What You Can Do:
 - Access important documents
 - Track hearing schedules
 - Communicate with your advocate
+
+Your Advocate:
+- Name: ${welcomeData.advocateName}
+- Company: ${welcomeData.advocateCompany || 'Legal Advocate'}
+- Email: ${welcomeData.advocateEmail}
+${welcomeData.advocatePhone ? `- Phone: ${welcomeData.advocatePhone}` : ''}
 
 If you have any questions, please contact ${welcomeData.advocateName} at ${welcomeData.advocateEmail}
     `;

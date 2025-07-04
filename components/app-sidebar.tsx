@@ -32,137 +32,214 @@ import { Separator } from "./ui/separator"
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession()
   
+  // Get user roles
+  const userRoles = session?.user?.roles || [];
+  const hasAdvocateRole = userRoles.includes('advocate') || userRoles.includes('admin');
+  const hasClientRole = userRoles.includes('client');
+  
+  // Determine base URL based on user role
+  const baseUrl = hasAdvocateRole ? '/dashboard/advocates' : '/dashboard/clients';
+  
   // Navigation data for legal case management
-  const navMain = [
+  const navMain = hasAdvocateRole ? [
     {
       title: "Dashboard",
-      url: "/dashboard",
+      url: "/dashboard/advocates",
       icon: SquareTerminal,
       items: [
         {
           title: "Overview",
-          url: "/dashboard",
+          url: "/dashboard/advocates",
         },
         {
           title: "Analytics",
-          url: "/dashboard/analytics",
+          url: "/dashboard/advocates/analytics",
         },
         {
           title: "Reports",
-          url: "/dashboard/reports",
+          url: "/dashboard/advocates/reports",
         },
       ],
     },
     {
       title: "Cases",
-      url: "/dashboard/cases",
+      url: "/dashboard/advocates/cases",
       icon: Briefcase,
       items: [
         {
           title: "All Cases",
-          url: "/dashboard/cases",
+          url: "/dashboard/advocates/cases",
         },
         {
           title: "Active Cases",
-          url: "/dashboard/cases/active",
+          url: "/dashboard/advocates/cases/active",
         },
         {
           title: "Closed Cases",
-          url: "/dashboard/cases/closed",
+          url: "/dashboard/advocates/cases/closed",
         },
         {
           title: "New Case",
-          url: "/dashboard/cases/new",
+          url: "/dashboard/advocates/cases/new",
         },
       ],
     },
     {
       title: "Documents",
-      url: "/dashboard/documents",
+      url: "/dashboard/advocates/documents",
       icon: FileText,
       items: [
         {
           title: "All Documents",
-          url: "/dashboard/documents",
+          url: "/dashboard/advocates/documents",
         },
         {
           title: "Upload Document",
-          url: "/dashboard/documents/upload",
+          url: "/dashboard/advocates/documents/upload",
         },
         {
           title: "Templates",
-          url: "/dashboard/documents/templates",
+          url: "/dashboard/advocates/documents/templates",
         },
       ],
     },
     {
       title: "Clients",
-      url: "/dashboard/clients",
+      url: "/dashboard/advocates/clients",
       icon: Users,
       items: [
         {
           title: "All Clients",
-          url: "/dashboard/clients",
+          url: "/dashboard/advocates/clients",
         },
         {
           title: "Active Clients",
-          url: "/dashboard/clients/active",
+          url: "/dashboard/advocates/clients/active",
         },
         {
           title: "Add Client",
-          url: "/dashboard/clients/new",
+          url: "/dashboard/advocates/clients/new",
         },
       ],
     },
     {
       title: "Calendar",
-      url: "/dashboard/calendar",
+      url: "/dashboard/advocates/calendar",
       icon: Calendar,
       items: [
         {
           title: "Hearings",
-          url: "/dashboard/calendar/hearings",
+          url: "/dashboard/advocates/calendar/hearings",
         },
         {
           title: "Deadlines",
-          url: "/dashboard/calendar/deadlines",
+          url: "/dashboard/advocates/calendar/deadlines",
         },
         {
           title: "Schedule",
-          url: "/dashboard/calendar/schedule",
+          url: "/dashboard/advocates/calendar/schedule",
         },
       ],
     },
     {
       title: "Financial",
-      url: "/dashboard/financial",
+      url: "/dashboard/advocates/financial",
       icon: DollarSign,
       items: [
         {
           title: "Invoices",
-          url: "/dashboard/financial/invoices",
+          url: "/dashboard/advocates/financial/invoices",
         },
         {
           title: "Payments",
-          url: "/dashboard/financial/payments",
+          url: "/dashboard/advocates/financial/payments",
         },
         {
           title: "Reports",
-          url: "/dashboard/financial/reports",
+          url: "/dashboard/advocates/financial/reports",
+        },
+      ],
+    },
+  ] : [
+    // Client navigation
+    {
+      title: "Dashboard",
+      url: "/dashboard/clients",
+      icon: SquareTerminal,
+      items: [
+        {
+          title: "Overview",
+          url: "/dashboard/clients",
+        },
+      ],
+    },
+    {
+      title: "My Cases",
+      url: "/dashboard/clients/cases",
+      icon: Briefcase,
+      items: [
+        {
+          title: "All Cases",
+          url: "/dashboard/clients/cases",
+        },
+        {
+          title: "Active Cases",
+          url: "/dashboard/clients/cases/active",
+        },
+        {
+          title: "Closed Cases",
+          url: "/dashboard/clients/cases/closed",
+        },
+      ],
+    },
+    {
+      title: "Documents",
+      url: "/dashboard/clients/documents",
+      icon: FileText,
+      items: [
+        {
+          title: "All Documents",
+          url: "/dashboard/clients/documents",
+        },
+      ],
+    },
+    {
+      title: "Messages",
+      url: "/dashboard/clients/messages",
+      icon: Users,
+      items: [
+        {
+          title: "Inbox",
+          url: "/dashboard/clients/messages",
+        },
+        {
+          title: "Contact Advocate",
+          url: "/dashboard/clients/messages/contact",
         },
       ],
     },
   ]
 
-  const navSecondary = [
+  const navSecondary = hasAdvocateRole ? [
     {
       title: "Support",
-      url: "/dashboard/support",
+      url: "/dashboard/advocates/support",
       icon: HelpCircle,
     },
     {
       title: "Feedback",
-      url: "/dashboard/feedback",
+      url: "/dashboard/advocates/feedback",
+      icon: Send,
+    },
+  ] : [
+    {
+      title: "Support",
+      url: "/dashboard/clients/support",
+      icon: HelpCircle,
+    },
+    {
+      title: "Contact Advocate",
+      url: "/dashboard/clients/contact",
       icon: Send,
     },
   ]
@@ -193,13 +270,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
-                <a href="/dashboard">
+                <a href={baseUrl}>
                   <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                     <SquareTerminal className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Lexapro</span>
-                    <span className="truncate text-xs">Case Manager</span>
+                    <span className="truncate text-xs">{hasAdvocateRole ? 'Case Manager' : 'Client Portal'}</span>
                   </div>
                 </a>
               </SidebarMenuButton>

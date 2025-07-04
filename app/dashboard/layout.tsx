@@ -22,7 +22,7 @@ export default function DashboardSectionLayout({ children }: { children: React.R
   const pathname = usePathname();
   const segments = pathname
     .split('/')
-    .filter(segment => segment && segment !== 'dashboard');
+    .filter(segment => segment && segment !== 'dashboard' && segment !== 'advocates');
 
   return (
     <SidebarProvider>
@@ -38,7 +38,7 @@ export default function DashboardSectionLayout({ children }: { children: React.R
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard/advocates">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
                 {segments.map((segment, index) => (
                   <React.Fragment key={`breadcrumb-${index}`}>

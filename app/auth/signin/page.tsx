@@ -136,6 +136,7 @@ export default function SignInPage() {
         setError(`Sign-in failed: ${result.error}`);
       } else if (result?.ok) {
         setSuccess('Signing you in...');
+        // Redirect based on user roles - will be handled by the dashboard page
         router.push('/dashboard');
       } else {
         setError('Sign-in failed. Please try again.');

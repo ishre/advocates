@@ -154,29 +154,42 @@ export async function DELETE(request: NextRequest) {
   try {
     const client = await User.findById(caseDoc.clientId).lean() as any;
     const advocate = await User.findById(caseDoc.advocateId).lean() as any;
-    const emailService = initializeEmailService({
-      host: process.env.EMAIL_HOST!,
-      port: parseInt(process.env.EMAIL_PORT!),
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER!,
-        pass: process.env.EMAIL_PASS!,
-      },
-    });
-    const recipients: string[] = [];
-    if (client?.email) recipients.push(client.email);
-    if (advocate?.email) recipients.push(advocate.email);
-    for (const email of recipients) {
-      await emailService.sendDocumentDeletionNotification(email, {
-        caseNumber: caseDoc.caseNumber,
-        caseTitle: caseDoc.title,
-        documentName: doc.name,
-        documentType: doc.type,
-        deletedBy: session.user.name || session.user.email,
-        deletedAt: new Date(),
+    
+    // Check if email configuration is available
+    const emailHost = process.env.EMAIL_HOST || process.env.SMTP_HOST;
+    const emailPort = process.env.EMAIL_PORT || process.env.SMTP_PORT;
+    const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+    const emailPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+    const emailSecure = process.env.EMAIL_SECURE || process.env.SMTP_SECURE;
+
+    if (emailHost && emailPort && emailUser && emailPass) {
+      const emailService = initializeEmailService({
+        host: emailHost,
+        port: parseInt(emailPort),
+        secure: emailSecure === 'true',
+        auth: {
+          user: emailUser,
+          pass: emailPass,
+        },
       });
+      const recipients: string[] = [];
+      if (client?.email) recipients.push(client.email);
+      if (advocate?.email) recipients.push(advocate.email);
+      for (const email of recipients) {
+        await emailService.sendDocumentDeletionNotification(email, {
+          caseNumber: caseDoc.caseNumber,
+          caseTitle: caseDoc.title,
+          documentName: doc.name,
+          documentType: doc.type,
+          deletedBy: session.user.name || session.user.email,
+          deletedAt: new Date(),
+        });
+      }
+    } else {
+      console.warn('Email configuration not found. Document deletion notification not sent.');
     }
   } catch (emailError) {
+    console.error('Failed to send document deletion notification email:', emailError);
     // Don't fail the request if email fails
   }
   return NextResponse.json({ message: "Document deleted" });

@@ -1,22 +1,22 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Eye, Trash2 } from "lucide-react";
-import NewClientForm from "@/components/forms/NewClientForm";
+'use client';
 
-interface Client {
-  _id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  FileText, 
+  Users, 
+  Clock, 
+  Calendar,
+  Eye,
+  Download,
+  MessageSquare,
+  Bell
+} from 'lucide-react';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { useSession } from 'next-auth/react';
 
 interface Case {
   _id: string;
@@ -24,278 +24,337 @@ interface Case {
   title: string;
   status: string;
   priority: string;
+  nextHearingDate?: string;
+  courtName: string;
   createdAt: string;
 }
 
-export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [viewCasesClient, setViewCasesClient] = useState<Client | null>(null);
-  const [clientCases, setClientCases] = useState<Case[]>([]);
-  const [casesLoading, setCasesLoading] = useState(false);
-  const [deleteClient, setDeleteClient] = useState<Client | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
-  const [deleteSuccess, setDeleteSuccess] = useState("");
+interface Document {
+  _id: string;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: string;
+  caseNumber: string;
+  caseTitle: string;
+}
 
-  const fetchClients = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-        ...(search ? { search } : {}),
-      });
-      const res = await fetch(`/api/clients?${params.toString()}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to fetch clients");
-      setClients(data.clients || []);
-      setTotalPages(data.pagination?.pages || 1);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to fetch clients");
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function ClientDashboard() {
+  const { data: session } = useSession();
+  const [cases, setCases] = useState<Case[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchClients();
-    // eslint-disable-next-line
-  }, [page, limit, search]);
+    // Simulate loading data
+    setTimeout(() => {
+      setCases([
+        {
+          _id: '1',
+          caseNumber: 'CIV-2024-001',
+          title: 'Property Dispute Case',
+          status: 'active',
+          priority: 'high',
+          nextHearingDate: '2024-12-15',
+          courtName: 'District Court',
+          createdAt: '2024-01-15'
+        },
+        {
+          _id: '2',
+          caseNumber: 'CIV-2024-002',
+          title: 'Contract Breach Case',
+          status: 'pending',
+          priority: 'medium',
+          courtName: 'High Court',
+          createdAt: '2024-02-20'
+        }
+      ]);
+      setDocuments([
+        {
+          _id: '1',
+          name: 'Contract Agreement.pdf',
+          type: 'application/pdf',
+          size: 2048576,
+          uploadedAt: '2024-01-20',
+          caseNumber: 'CIV-2024-001',
+          caseTitle: 'Property Dispute Case'
+        },
+        {
+          _id: '2',
+          name: 'Evidence Document.docx',
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          size: 1048576,
+          uploadedAt: '2024-01-25',
+          caseNumber: 'CIV-2024-001',
+          caseTitle: 'Property Dispute Case'
+        }
+      ]);
+      setLoading(false);
+    }, 1000);
+  }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    setSearch(searchInput);
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
   };
 
-  const handleCreateClient = () => {
-    setShowCreateForm(true);
-  };
-
-  const handleCloseCreateForm = () => {
-    setShowCreateForm(false);
-  };
-
-  const handleCreateSuccess = () => {
-    setShowCreateForm(false);
-    fetchClients();
-  };
-
-  const handleViewCases = async (client: Client) => {
-    setViewCasesClient(client);
-    setCasesLoading(true);
-    try {
-      const params = new URLSearchParams({
-        clientId: client._id,
-        limit: "50",
-      });
-      const res = await fetch(`/api/cases?${params.toString()}`);
-      const data = await res.json();
-      setClientCases(data.cases || []);
-    } catch (err: unknown) {
-      setClientCases([]);
-      setError(err instanceof Error ? err.message : 'Failed to fetch cases');
-    } finally {
-      setCasesLoading(false);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'closed': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const handleDeleteClient = async () => {
-    if (!deleteClient) return;
-    setDeleteLoading(true);
-    setDeleteError("");
-    setDeleteSuccess("");
-    try {
-      const res = await fetch(`/api/clients?id=${deleteClient._id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to delete client");
-      setDeleteSuccess("Client and all related cases deleted successfully.");
-      setDeleteClient(null);
-      fetchClients();
-    } catch (err: unknown) {
-      setDeleteError(err instanceof Error ? err.message : "Failed to delete client");
-    } finally {
-      setDeleteLoading(false);
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-orange-100 text-orange-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">All Clients</h1>
-      <form onSubmit={handleSearch} className="flex gap-2 items-center max-w-md mb-4">
-        <Input
-          type="text"
-          placeholder="Search by name, email, or phone"
-          className="pl-4"
-          value={searchInput}
-          onChange={e => setSearchInput(e.target.value)}
-        />
-        <Button type="submit">Search</Button>
-        <Button type="button" variant="default" className="ml-auto" onClick={handleCreateClient}>
-          <Plus className="w-4 h-4 mr-1" /> Create Client
-        </Button>
-      </form>
-      {loading ? (
-        <div className="py-8 text-center text-muted-foreground">Loading...</div>
-      ) : error ? (
-        <div className="text-red-500 py-8 text-center">{error}</div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border bg-background shadow">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead>Cases</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4">No clients found.</TableCell>
-                </TableRow>
-              ) : (
-                clients.map(client => (
-                  <TableRow key={client._id}>
-                    <TableCell>{client.name}</TableCell>
-                    <TableCell>{client.email}</TableCell>
-                    <TableCell>{client.phone || '-'}</TableCell>
-                    <TableCell>
-                      <Badge className={client.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                        {client.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(client.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => handleViewCases(client)}>
-                        <Eye className="w-4 h-4 mr-1" /> View Cases
-                      </Button>
-                      <Button size="sm" variant="destructive" className="ml-2" onClick={() => { setDeleteClient(client); handleViewCases(client); }}>
-                        <Trash2 className="w-4 h-4 mr-1" /> Delete
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-      {/* Pagination */}
-      <div className="flex items-center justify-between mt-4">
-        <div>
-          Page {page} of {totalPages}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</Button>
-          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</Button>
-        </div>
-        <div>
-          <select
-            className="border rounded px-2 py-1 text-sm"
-            value={limit}
-            onChange={e => { setLimit(Number(e.target.value)); setPage(1); }}
-          >
-            {[10, 20, 50].map(opt => (
-              <option key={opt} value={opt}>{opt} per page</option>
-            ))}
-          </select>
-        </div>
-      </div>
-      {/* Create Client Dialog */}
-      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create New Client</DialogTitle>
-          </DialogHeader>
-          <NewClientForm onSuccess={handleCreateSuccess} onClose={handleCloseCreateForm} />
-        </DialogContent>
-      </Dialog>
-      {/* View Cases Dialog */}
-      <Dialog open={!!viewCasesClient} onOpenChange={() => setViewCasesClient(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Cases for {viewCasesClient?.name}</DialogTitle>
-          </DialogHeader>
-          {casesLoading ? (
-            <div className="py-8 text-center text-muted-foreground">Loading cases...</div>
-          ) : clientCases.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">No cases found for this client.</div>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border bg-background shadow">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Case Number</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Created At</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clientCases.map(c => (
-                    <TableRow key={c._id}>
-                      <TableCell>{c.caseNumber}</TableCell>
-                      <TableCell>{c.title}</TableCell>
-                      <TableCell>
-                        <Badge>{c.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge>{c.priority}</Badge>
-                      </TableCell>
-                      <TableCell>{new Date(c.createdAt).toLocaleDateString()}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Welcome, {session?.user?.name || 'Client'}!</CardTitle>
+          <CardDescription>
+            Access your case information, documents, and important updates here.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <FileText className="h-8 w-8 text-blue-600" />
+              <div>
+                <p className="text-2xl font-bold">{cases.length}</p>
+                <p className="text-sm text-muted-foreground">Active Cases</p>
+              </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
-      {/* Delete Client Confirmation Dialog */}
-      <Dialog open={!!deleteClient} onOpenChange={() => setDeleteClient(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Delete Client</DialogTitle>
-          </DialogHeader>
-          {deleteError && <div className="text-red-500 mb-2">{deleteError}</div>}
-          {deleteSuccess && <div className="text-green-600 mb-2">{deleteSuccess}</div>}
-          <div>Are you sure you want to delete <b>{deleteClient?.name}</b> and <b>all their cases</b>? This action cannot be undone.</div>
-          <div className="mt-4">
-            <div className="font-semibold mb-2">Cases to be deleted:</div>
-            {casesLoading ? (
-              <div className="py-4 text-muted-foreground">Loading cases...</div>
-            ) : clientCases.length === 0 ? (
-              <div className="py-4 text-muted-foreground">No cases found for this client.</div>
-            ) : (
-              <ul className="list-disc pl-6">
-                {clientCases.map(c => (
-                  <li key={c._id}>{c.caseNumber} - {c.title}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 mt-6">
-            <Button variant="outline" onClick={() => setDeleteClient(null)} disabled={deleteLoading}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteClient} disabled={deleteLoading}>
-              {deleteLoading ? "Deleting..." : "Delete Client & Cases"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Download className="h-8 w-8 text-green-600" />
+              <div>
+                <p className="text-2xl font-bold">{documents.length}</p>
+                <p className="text-sm text-muted-foreground">Documents</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Calendar className="h-8 w-8 text-orange-600" />
+              <div>
+                <p className="text-2xl font-bold">2</p>
+                <p className="text-sm text-muted-foreground">Upcoming Hearings</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <MessageSquare className="h-8 w-8 text-purple-600" />
+              <div>
+                <p className="text-2xl font-bold">5</p>
+                <p className="text-sm text-muted-foreground">New Messages</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="cases" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="cases">My Cases</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+        </TabsList>
+
+        {/* Cases Tab */}
+        <TabsContent value="cases" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>My Cases</CardTitle>
+              <CardDescription>Track the progress of your legal cases</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto rounded-lg border bg-background shadow">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Case Number</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Next Hearing</TableHead>
+                      <TableHead>Court</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {cases.map((caseItem) => (
+                      <TableRow key={caseItem._id}>
+                        <TableCell className="font-medium">{caseItem.caseNumber}</TableCell>
+                        <TableCell>{caseItem.title}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(caseItem.status)}>
+                            {caseItem.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getPriorityColor(caseItem.priority)}>
+                            {caseItem.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {caseItem.nextHearingDate ? formatDate(caseItem.nextHearingDate) : 'Not scheduled'}
+                        </TableCell>
+                        <TableCell>{caseItem.courtName}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline">
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              <MessageSquare className="w-4 h-4 mr-1" />
+                              Message
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Documents Tab */}
+        <TabsContent value="documents" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Case Documents</CardTitle>
+              <CardDescription>Access and download your case-related documents</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto rounded-lg border bg-background shadow">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Document Name</TableHead>
+                      <TableHead>Case</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Size</TableHead>
+                      <TableHead>Uploaded</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {documents.map((doc) => (
+                      <TableRow key={doc._id}>
+                        <TableCell className="font-medium">{doc.name}</TableCell>
+                        <TableCell>{doc.caseNumber}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{doc.type.split('/')[1].toUpperCase()}</Badge>
+                        </TableCell>
+                        <TableCell>{formatFileSize(doc.size)}</TableCell>
+                        <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline">
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              <Download className="w-4 h-4 mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Notifications Tab */}
+        <TabsContent value="notifications" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Notifications</CardTitle>
+              <CardDescription>Stay updated with case developments and important messages</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                  <Bell className="h-5 w-5 text-blue-600 mt-1" />
+                  <div className="flex-1">
+                    <h4 className="font-medium">Case Update: Property Dispute Case</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Your case CIV-2024-001 has been updated. New documents have been uploaded.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">2 hours ago</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                  <Calendar className="h-5 w-5 text-orange-600 mt-1" />
+                  <div className="flex-1">
+                    <h4 className="font-medium">Hearing Scheduled</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Your next hearing for case CIV-2024-001 has been scheduled for December 15, 2024.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">1 day ago</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                  <MessageSquare className="h-5 w-5 text-green-600 mt-1" />
+                  <div className="flex-1">
+                    <h4 className="font-medium">Message from Your Advocate</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Your advocate has sent you a message regarding case CIV-2024-002.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">3 days ago</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 } 

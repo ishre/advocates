@@ -95,10 +95,10 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ value, onChange }) => {
 
       // Add new client to the list
       const newClient = {
-        _id: result.user.id,
-        name: result.user.name,
-        email: result.user.email,
-        phone: result.user.phone,
+        _id: result.client.id,
+        name: result.client.name,
+        email: result.client.email,
+        phone: result.client.phone,
       };
       
       setClients(prev => [newClient, ...prev]);

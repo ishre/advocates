@@ -156,26 +156,41 @@ export async function POST(request: NextRequest) {
 
     // Send welcome email to client
     try {
-      const emailService = initializeEmailService({
-        host: process.env.SMTP_HOST!,
-        port: parseInt(process.env.SMTP_PORT!),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER!,
-          pass: process.env.SMTP_PASS!,
-        },
-      });
+      // Check if email configuration is available
+      const emailHost = process.env.EMAIL_HOST || process.env.SMTP_HOST;
+      const emailPort = process.env.EMAIL_PORT || process.env.SMTP_PORT;
+      const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+      const emailPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+      const emailSecure = process.env.EMAIL_SECURE || process.env.SMTP_SECURE;
 
-      await emailService.sendWelcomeEmail(
-        newClient.email,
-        {
-          name: newClient.name,
-          advocateName: currentUser.name,
-          advocateEmail: currentUser.email,
-          tempPassword,
-        }
-      );
+      if (emailHost && emailPort && emailUser && emailPass) {
+        const emailService = initializeEmailService({
+          host: emailHost,
+          port: parseInt(emailPort),
+          secure: emailSecure === 'true',
+          auth: {
+            user: emailUser,
+            pass: emailPass,
+          },
+        });
+
+        await emailService.sendWelcomeEmail(
+          newClient.email,
+          {
+            name: newClient.name,
+            advocateName: currentUser.name,
+            advocateEmail: currentUser.email,
+            advocatePhone: currentUser.phone || 'Not provided',
+            advocateCompany: currentUser.companyName || 'Not provided',
+            advocateImage: currentUser.image || '',
+            tempPassword,
+          }
+        );
+      } else {
+        console.warn('Email configuration not found. Welcome email not sent.');
+      }
     } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
       // Don't fail the request if email fails
     }
 
@@ -259,24 +274,36 @@ export async function DELETE(request: NextRequest) {
 
     // Send notification email to client
     try {
-      const emailService = initializeEmailService({
-        host: process.env.SMTP_HOST!,
-        port: parseInt(process.env.SMTP_PORT!),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER!,
-          pass: process.env.SMTP_PASS!,
-        },
-      });
+      // Check if email configuration is available
+      const emailHost = process.env.EMAIL_HOST || process.env.SMTP_HOST;
+      const emailPort = process.env.EMAIL_PORT || process.env.SMTP_PORT;
+      const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+      const emailPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+      const emailSecure = process.env.EMAIL_SECURE || process.env.SMTP_SECURE;
 
-      await emailService.sendAccountDeletionEmail(
-        client.email,
-        {
-          name: client.name,
-          advocateName: currentUser.name,
-        }
-      );
+      if (emailHost && emailPort && emailUser && emailPass) {
+        const emailService = initializeEmailService({
+          host: emailHost,
+          port: parseInt(emailPort),
+          secure: emailSecure === 'true',
+          auth: {
+            user: emailUser,
+            pass: emailPass,
+          },
+        });
+
+        await emailService.sendAccountDeletionEmail(
+          client.email,
+          {
+            name: client.name,
+            advocateName: currentUser.name,
+          }
+        );
+      } else {
+        console.warn('Email configuration not found. Deletion notification not sent.');
+      }
     } catch (emailError) {
+      console.error('Failed to send deletion notification email:', emailError);
       // Don't fail the request if email fails
     }
 

@@ -7,11 +7,11 @@ export default function NewCasePage() {
   const router = useRouter();
 
   const handleClose = () => {
-    router.push('/dashboard/cases');
+    router.push('/dashboard/advocates/cases');
   };
 
   const handleSuccess = () => {
-    router.push('/dashboard/cases');
+    router.push('/dashboard/advocates/cases');
   };
 
   return (

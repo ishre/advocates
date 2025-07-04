@@ -100,13 +100,13 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <a href="/dashboard/profile">
+                <a href="/dashboard/advocates/profile">
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="/dashboard/settings">
+                <a href="/dashboard/advocates/settings">
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </a>
@@ -115,13 +115,13 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <a href="/dashboard/settings/billing">
+                <a href="/dashboard/advocates/settings/billing">
                   <CreditCard className="mr-2 h-4 w-4" />
                   Billing
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="/dashboard/notifications">
+                <a href="/dashboard/advocates/notifications">
                   <Bell className="mr-2 h-4 w-4" />
                   Notifications
                 </a>
