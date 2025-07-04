@@ -57,7 +57,6 @@ export async function POST(request: NextRequest) {
 
     // TODO: Send email with reset link
     // For now, we'll just return the reset URL in development
-    console.log('Password reset URL:', resetUrl);
 
     return NextResponse.json(
       { 

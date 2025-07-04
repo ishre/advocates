@@ -107,7 +107,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching cases:', error);
     return NextResponse.json(
       { error: 'Failed to fetch cases' },
       { status: 500 }
@@ -237,7 +236,6 @@ export async function POST(request: NextRequest) {
       case: newCase,
     });
   } catch (error) {
-    console.error('Error creating case:', error);
     return NextResponse.json(
       { error: 'Failed to create case' },
       { status: 500 }

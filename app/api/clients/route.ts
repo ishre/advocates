@@ -73,7 +73,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching clients:', error);
     return NextResponse.json(
       { error: 'Failed to fetch clients' },
       { status: 500 }
@@ -177,7 +176,6 @@ export async function POST(request: NextRequest) {
         }
       );
     } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
       // Don't fail the request if email fails
     }
 
@@ -192,7 +190,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error creating client:', error);
     return NextResponse.json(
       { error: 'Failed to create client' },
       { status: 500 }
@@ -280,7 +277,6 @@ export async function DELETE(request: NextRequest) {
         }
       );
     } catch (emailError) {
-      console.error('Failed to send deletion email:', emailError);
       // Don't fail the request if email fails
     }
 
@@ -288,7 +284,6 @@ export async function DELETE(request: NextRequest) {
       message: 'Client and all associated cases deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting client:', error);
     return NextResponse.json(
       { error: 'Failed to delete client' },
       { status: 500 }

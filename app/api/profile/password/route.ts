@@ -16,8 +16,8 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { currentPassword, newPassword } = body;
 
-    if (!currentPassword || !newPassword) {
-      return NextResponse.json({ error: 'Current password and new password are required' }, { status: 400 });
+    if (!newPassword) {
+      return NextResponse.json({ error: 'New password is required' }, { status: 400 });
     }
 
     if (newPassword.length < 8) {
@@ -32,10 +32,15 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
-    if (!isCurrentPasswordValid) {
-      return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
+    // If user already has a password, require currentPassword and verify it
+    if (user.password) {
+      if (!currentPassword) {
+        return NextResponse.json({ error: 'Current password is required' }, { status: 400 });
+      }
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
+      }
     }
 
     // Hash new password

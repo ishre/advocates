@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { User, Mail, Phone, Building, Shield, Calendar, Save, Upload, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
+import { User, Mail, Phone, Building, Shield, Calendar, Save, Upload, Eye, EyeOff, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 
 // Profile form schema
 const profileFormSchema = z.object({
@@ -65,6 +65,8 @@ export default function ProfilePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [imageError, setImageError] = useState('');
 
   // Profile form
   const profileForm = useForm<ProfileFormValues>({
@@ -173,6 +175,9 @@ export default function ProfilePage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setIsImageUploading(true);
+    setImageError('');
+
     const formData = new FormData();
     formData.append('image', file);
 
@@ -184,14 +189,66 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const data = await response.json();
+        
         setUserProfile(prev => prev ? { ...prev, image: data.imageUrl } : null);
         toast.success('Profile picture updated');
+        
+        // Force session refresh to update sidebar and all components
         await update();
+        
+        // Additional delay to ensure session is fully updated
+        setTimeout(async () => {
+          await update();
+        }, 1000);
       } else {
-        toast.error('Failed to upload image');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload image');
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error uploading image');
+      const errorMessage = error instanceof Error ? error.message : 'Error uploading image';
+      setImageError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsImageUploading(false);
+      // Reset the input
+      event.target.value = '';
+    }
+  };
+
+  // Handle image removal
+  const handleImageRemove = async () => {
+    if (!userProfile?.image) return;
+
+    setIsImageUploading(true);
+    setImageError('');
+
+    try {
+      const response = await fetch('/api/profile/avatar', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Update local state to remove image
+        setUserProfile(prev => prev ? { ...prev, image: undefined } : null);
+        toast.success('Profile picture removed');
+        
+        // Force session refresh to update sidebar and all components
+        await update();
+        
+        // Additional delay to ensure session is fully updated
+        setTimeout(async () => {
+          await update();
+        }, 1000);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to remove image');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error removing image';
+      setImageError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsImageUploading(false);
     }
   };
 
@@ -236,21 +293,65 @@ export default function ProfilePage() {
                       {userProfile?.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
+                  
+                  {imageError && (
+                    <div className="text-sm text-red-600 text-center max-w-xs">
+                      {imageError}
+                    </div>
+                  )}
+                  
                   <div className="flex flex-col items-center space-y-2">
-                    <Button variant="outline" size="sm" asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      asChild
+                      disabled={isImageUploading}
+                    >
                       <label htmlFor="image-upload" className="cursor-pointer">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload Image
+                        {isImageUploading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload Image
+                          </>
+                        )}
                       </label>
                     </Button>
+                    
+                    {userProfile?.image && (
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={handleImageRemove}
+                        disabled={isImageUploading}
+                      >
+                        {isImageUploading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Removing...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remove Image
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    
                     <input
                       id="image-upload"
                       type="file"
                       accept="image/*"
                       className="hidden"
                       onChange={handleImageUpload}
+                      disabled={isImageUploading}
                     />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground text-center">
                       JPG, PNG or GIF. Max 2MB.
                     </p>
                   </div>

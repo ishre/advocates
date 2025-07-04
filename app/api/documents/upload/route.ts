@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   const buffer = Buffer.from(await file.arrayBuffer());
   const safeName = file.name.replace(/\s+/g, "_");
   const timestamp = Date.now();
-  const gcsObject = `${caseId}/${timestamp}_${safeName}`;
+  const gcsObject = `cases/${caseId}/${timestamp}_${safeName}`;
   const gcsFile = bucket.file(gcsObject);
 
   try {
@@ -119,13 +119,11 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (emailError) {
-      console.error("Failed to send document notification email:", emailError);
       // Don't fail the upload if email fails
     }
 
     return NextResponse.json({ document: docMeta }, { status: 201 });
   } catch (error) {
-    console.error("Document upload error:", error);
     return NextResponse.json({ error: "Failed to upload document" }, { status: 500 });
   }
 } 

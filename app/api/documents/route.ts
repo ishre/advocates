@@ -101,7 +101,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching documents:", error);
     return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 });
   }
 }
@@ -140,21 +139,16 @@ export async function DELETE(request: NextRequest) {
       }
     }
     if (objectName) {
-      console.log(`Attempting to delete file from GCS: bucket=${bucketName}, object=${objectName}`);
       const file = bucket.file(objectName);
       const [exists] = await file.exists();
       if (exists) {
         await file.delete();
-        console.log(`Deleted file from GCS: ${objectName}`);
-      } else {
-        console.warn(`File not found in GCS for deletion: ${objectName}`);
       }
     } else {
-      console.error("No GCS object name found in document metadata. Skipping GCS deletion.");
+      // Log but don't fail if GCS delete fails
     }
   } catch (err) {
     // Log but don't fail if GCS delete fails
-    console.error("Failed to delete file from GCS:", err);
   }
   // Send email notification to client and advocate
   try {
@@ -183,7 +177,7 @@ export async function DELETE(request: NextRequest) {
       });
     }
   } catch (emailError) {
-    console.error("Failed to send document deletion email:", emailError);
+    // Don't fail the request if email fails
   }
   return NextResponse.json({ message: "Document deleted" });
 } 

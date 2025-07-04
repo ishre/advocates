@@ -101,59 +101,46 @@ export default function SignInPage() {
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Signin form submitted');
     setIsLoading(true);
     setError('');
     setSuccess('');
 
-    // Basic validation
-    if (!email.trim() || !password.trim()) {
-      console.log('Validation failed: missing email or password');
-      setError('Please enter both email and password');
+    // Email validation
+    if (!email.trim()) {
+      setError('Please enter your email');
       setIsLoading(false);
       return;
     }
-
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      console.log('Validation failed: invalid email format');
       setError('Please enter a valid email address');
       setIsLoading(false);
       return;
     }
 
-    console.log('Attempting signin with:', email);
+    if (!password.trim()) {
+      // No password entered: try Google sign-in or show message
+      setIsLoading(false);
+      setError('No password entered. Please use Google sign-in if you registered with Google, or enter your password if you have set one.');
+      return;
+    }
 
-    // Test if the issue is with NextAuth or form submission
+    // If password is entered, proceed with credentials sign-in
     try {
-      // First, let's test if we can reach the NextAuth API
-      const testResponse = await fetch('/api/auth/signin', {
-        method: 'GET',
-      });
-      console.log('NextAuth API test response:', testResponse.status);
-
       const result = await signIn('credentials', {
         email: email.toLowerCase(),
         password,
         redirect: false,
       });
-
-      console.log('Signin result:', result);
-
       if (result?.error) {
-        console.log('Signin error:', result.error);
         setError(`Sign-in failed: ${result.error}`);
       } else if (result?.ok) {
-        console.log('Signin successful, redirecting to dashboard');
         setSuccess('Signing you in...');
         router.push('/dashboard');
       } else {
-        console.log('Signin result is neither error nor ok:', result);
         setError('Sign-in failed. Please try again.');
       }
     } catch (error) {
-      console.error('Sign-in error:', error);
       setError(`An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
@@ -265,20 +252,20 @@ export default function SignInPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Password <span className="text-xs text-gray-400">(optional for Google users)</span></Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
+                    placeholder="Enter your password (optional)"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
                       if (error) setError('');
                     }}
                     className="pl-10 pr-10"
-                    required
+                    // removed required
                     disabled={isLoading}
                   />
                   <Button
@@ -295,6 +282,10 @@ export default function SignInPage() {
                       <Eye className="h-4 w-4 text-gray-400" />
                     )}
                   </Button>
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  If you signed up with Google, you can leave this blank and use Google sign-in.<br />
+                  If you have set a password, you can use either method.
                 </div>
               </div>
 
@@ -346,64 +337,6 @@ export default function SignInPage() {
                 ) : (
                   'Sign in'
                 )}
-              </Button>
-
-              {/* Test button to check if form submission works */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  console.log('Test button clicked');
-                  console.log('Email:', email);
-                  console.log('Password:', password ? '***' : 'empty');
-                  setError('Test button clicked - form is working');
-                }}
-                disabled={isLoading || isGoogleLoading}
-              >
-                Test Form (Debug)
-              </Button>
-
-              {/* Test database connection */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/test');
-                    const data = await response.json();
-                    console.log('Database test result:', data);
-                    setError(`Database test: ${data.message}`);
-                  } catch (error) {
-                    console.error('Database test failed:', error);
-                    setError('Database test failed');
-                  }
-                }}
-                disabled={isLoading || isGoogleLoading}
-              >
-                Test Database Connection
-              </Button>
-
-              {/* Test users in database */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/test-users');
-                    const data = await response.json();
-                    console.log('Users in database:', data);
-                    setError(`Users in DB: ${data.count} users found`);
-                  } catch (error) {
-                    console.error('Users test failed:', error);
-                    setError('Users test failed');
-                  }
-                }}
-                disabled={isLoading || isGoogleLoading}
-              >
-                Check Users in Database
               </Button>
             </form>
 

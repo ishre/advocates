@@ -356,7 +356,7 @@ export default async function HomePage() {
                 </Button>
               </Link>
               <Link href="/contact">
-                <Button size="lg" variant="outline" className="text-lg px-8 py-3 border-white text-white hover:bg-white hover:text-blue-600">
+                <Button size="lg" variant="outline" className="text-lg px-8 py-3 border-white text-blue-900 hover:bg-blue-900 hover:text-white">
                   Contact Sales
                 </Button>
               </Link>

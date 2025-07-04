@@ -100,7 +100,7 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <a href="/dashboard/settings/profile">
+                <a href="/dashboard/profile">
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </a>

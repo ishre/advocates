@@ -47,7 +47,6 @@ export async function GET(
 
     return NextResponse.json({ case: caseData });
   } catch (error) {
-    console.error('Error fetching case:', error);
     return NextResponse.json(
       { error: 'Failed to fetch case' },
       { status: 500 }
@@ -175,7 +174,6 @@ export async function PUT(
       case: updatedCase,
     });
   } catch (error) {
-    console.error('Error updating case:', error);
     return NextResponse.json(
       { error: 'Failed to update case' },
       { status: 500 }
@@ -220,7 +218,6 @@ export async function DELETE(
       message: 'Case deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting case:', error);
     return NextResponse.json(
       { error: 'Failed to delete case' },
       { status: 500 }

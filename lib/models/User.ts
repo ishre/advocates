@@ -5,6 +5,7 @@ export interface IUser extends Document {
   email: string;
   password?: string;
   image?: string;
+  profileImagePath?: string; // GCS object path for profile image
   roles: string[]; // Array of roles: ['advocate', 'team_member', 'admin', 'client']
   companyName?: string;
   phone?: string;
@@ -24,6 +25,7 @@ export interface IUser extends Document {
   isMainAdvocate?: boolean; // True if this user is the main advocate for their organization
   createdAt: Date;
   updatedAt: Date;
+  oauthProvider?: string; // e.g., 'google', 'github', etc.
 }
 
 const UserSchema = new Schema<IUser>({
@@ -39,10 +41,16 @@ const UserSchema = new Schema<IUser>({
   },
   password: {
     type: String,
-    // Password is required for all users
-    required: true,
+    required: false, // No longer required at the schema level
+  },
+  oauthProvider: {
+    type: String, // e.g., 'google', 'github', etc.
+    required: false,
   },
   image: {
+    type: String,
+  },
+  profileImagePath: {
     type: String,
   },
   roles: {
@@ -118,6 +126,8 @@ const UserSchema = new Schema<IUser>({
 }, {
   timestamps: true,
 });
+
+// Remove the pre-validation hook for password
 
 // Indexes for tenant isolation and performance
 UserSchema.index({ resetPasswordToken: 1 });

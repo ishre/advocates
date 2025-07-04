@@ -31,6 +31,7 @@ import { Separator } from "./ui/separator"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession()
+  
   // Navigation data for legal case management
   const navMain = [
     {
