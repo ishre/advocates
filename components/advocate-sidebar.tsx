@@ -11,11 +11,9 @@ import {
   Calendar,
   DollarSign,
   HelpCircle,
-  type LucideIcon,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -29,19 +27,11 @@ import {
 } from "@/components/ui/sidebar"
 import { Separator } from "./ui/separator"
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AdvocateSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession()
   
-  // Get user roles
-  const userRoles = session?.user?.roles || [];
-  const hasAdvocateRole = userRoles.includes('advocate') || userRoles.includes('admin');
-  const hasClientRole = userRoles.includes('client');
-  
-  // Determine base URL based on user role
-  const baseUrl = hasAdvocateRole ? '/dashboard/advocates' : '/dashboard/clients';
-  
-  // Navigation data for legal case management
-  const navMain = hasAdvocateRole ? [
+  // Navigation data for advocates
+  const navMain = [
     {
       title: "Dashboard",
       url: "/dashboard/advocates",
@@ -160,67 +150,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
       ],
     },
-  ] : [
-    // Client navigation
-    {
-      title: "Dashboard",
-      url: "/dashboard/clients",
-      icon: SquareTerminal,
-      items: [
-        {
-          title: "Overview",
-          url: "/dashboard/clients",
-        },
-      ],
-    },
-    {
-      title: "My Cases",
-      url: "/dashboard/clients/cases",
-      icon: Briefcase,
-      items: [
-        {
-          title: "All Cases",
-          url: "/dashboard/clients/cases",
-        },
-        {
-          title: "Active Cases",
-          url: "/dashboard/clients/cases/active",
-        },
-        {
-          title: "Closed Cases",
-          url: "/dashboard/clients/cases/closed",
-        },
-      ],
-    },
-    {
-      title: "Documents",
-      url: "/dashboard/clients/documents",
-      icon: FileText,
-      items: [
-        {
-          title: "All Documents",
-          url: "/dashboard/clients/documents",
-        },
-      ],
-    },
-    {
-      title: "Messages",
-      url: "/dashboard/clients/messages",
-      icon: Users,
-      items: [
-        {
-          title: "Inbox",
-          url: "/dashboard/clients/messages",
-        },
-        {
-          title: "Contact Advocate",
-          url: "/dashboard/clients/messages/contact",
-        },
-      ],
-    },
   ]
 
-  const navSecondary = hasAdvocateRole ? [
+  const navSecondary = [
     {
       title: "Support",
       url: "/dashboard/advocates/support",
@@ -231,25 +163,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/dashboard/advocates/feedback",
       icon: Send,
     },
-  ] : [
-    {
-      title: "Support",
-      url: "/dashboard/clients/support",
-      icon: HelpCircle,
-    },
-    {
-      title: "Contact Advocate",
-      url: "/dashboard/clients/contact",
-      icon: Send,
-    },
-  ]
-
-  const projects: {
-    name: string
-    url: string
-    icon: LucideIcon
-  }[] = [
-    // Removed backup/restore and Google Drive projects
   ]
 
   // Create user object from session data
@@ -270,13 +183,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
-                <a href={baseUrl}>
+                <a href="/dashboard/advocates">
                   <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                     <SquareTerminal className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Lexapro</span>
-                    <span className="truncate text-xs">{hasAdvocateRole ? 'Case Manager' : 'Client Portal'}</span>
+                    <span className="truncate text-xs">Case Manager</span>
                   </div>
                 </a>
               </SidebarMenuButton>
@@ -287,7 +200,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
-        <NavProjects projects={projects} />
         <NavSecondary items={navSecondary} className="mt-auto " />
       </SidebarContent>
       <SidebarFooter>
@@ -295,4 +207,4 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarFooter>
     </Sidebar>
   )
-}
+} 
