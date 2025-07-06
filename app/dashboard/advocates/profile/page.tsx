@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,7 +27,7 @@ const profileFormSchema = z.object({
 
 // Password change schema
 const passwordChangeSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
+  currentPassword: z.string().optional(),
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string().min(1, 'Please confirm your password'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
@@ -47,6 +48,7 @@ interface UserProfile {
   roles: string[];
   isActive: boolean;
   emailVerified: boolean;
+  hasPassword?: boolean;
   subscription?: {
     plan: string;
     status: string;
@@ -59,6 +61,8 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const { data: session, update } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -67,6 +71,10 @@ export default function ProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [imageError, setImageError] = useState('');
+  const [hasPassword, setHasPassword] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile');
+  const [showPasswordSetup, setShowPasswordSetup] = useState(false);
 
   // Profile form
   const profileForm = useForm<ProfileFormValues>({
@@ -89,6 +97,20 @@ export default function ProfilePage() {
     },
   });
 
+  // Handle URL parameters and password setup
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const setup = searchParams.get('setup');
+    
+    if (tab) {
+      setActiveTab(tab);
+    }
+    
+    if (setup === 'password') {
+      setShowPasswordSetup(true);
+    }
+  }, [searchParams]);
+
   // Fetch user profile
   useEffect(() => {
     const fetchProfile = async () => {
@@ -97,6 +119,7 @@ export default function ProfilePage() {
         if (response.ok) {
           const data = await response.json();
           setUserProfile(data);
+          setHasPassword(!!data.hasPassword); // Check if user has a password
           profileForm.reset({
             name: data.name,
             email: data.email,
@@ -154,7 +177,7 @@ export default function ProfilePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          currentPassword: data.currentPassword,
+          currentPassword: hasPassword ? data.currentPassword : undefined,
           newPassword: data.newPassword,
         }),
       });
@@ -162,8 +185,23 @@ export default function ProfilePage() {
       if (response.ok) {
         toast.success('Password changed successfully');
         passwordForm.reset();
+        setPasswordSuccess(true);
+        setShowPasswordSetup(false);
+        
+        // Re-fetch profile data to get updated hasPassword state
+        const profileResponse = await fetch('/api/profile');
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          setHasPassword(!!profileData.hasPassword);
+        }
+        
+        // Redirect to dashboard after successful password set
+        setTimeout(() => {
+          router.push('/dashboard/advocates');
+        }, 2000);
       } else {
-        toast.error('Failed to change password');
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to change password');
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error changing password');
@@ -262,6 +300,43 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
+      {/* Password Setup Prompt */}
+      {showPasswordSetup && !hasPassword && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0">
+                <Shield className="h-8 w-8 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-orange-800 mb-2">
+                  Set Up Your Password
+                </h3>
+                <p className="text-orange-700 mb-4">
+                  To enable email/password login and secure your account, please set a password for your account.
+                </p>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    onClick={() => setActiveTab('security')}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Set Password Now
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowPasswordSetup(false)}
+                    className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                  >
+                    Remind Me Later
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
@@ -271,7 +346,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
@@ -288,9 +363,15 @@ export default function ProfilePage() {
               <CardContent className="space-y-4">
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={userProfile?.image} alt={userProfile?.name} />
+                    <AvatarImage 
+                      src={userProfile?.image} 
+                      alt={userProfile?.name}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
                     <AvatarFallback className="text-lg">
-                      {userProfile?.name?.charAt(0).toUpperCase()}
+                      {userProfile?.name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   
@@ -464,69 +545,127 @@ export default function ProfilePage() {
         <TabsContent value="security" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Change Password</CardTitle>
+              <CardTitle>{hasPassword ? 'Change Password' : 'Set Password'}</CardTitle>
               <CardDescription>
-                Update your password to keep your account secure
+                {hasPassword
+                  ? 'Update your password to keep your account secure'
+                  : 'Set a password to enable email/password login for your account'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Form {...passwordForm}>
-                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-                  <FormField
-                    control={passwordForm.control}
-                    name="currentPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Current Password</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Shield className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              {...field}
-                              type={showPassword ? "text" : "password"}
-                              className="pl-10 pr-10"
-                              placeholder="Enter current password"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowPassword(!showPassword)}
-                            >
-                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid gap-4 md:grid-cols-2">
+              {/* SET PASSWORD: Only show if !hasPassword and not passwordSuccess */}
+              {!hasPassword && !passwordSuccess && (
+                <Form {...passwordForm}>
+                  <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <FormField
+                        control={passwordForm.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>New Password</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Shield className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  {...field}
+                                  type={showNewPassword ? "text" : "password"}
+                                  className="pl-10 pr-10"
+                                  placeholder="Enter new password"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowNewPassword(!showNewPassword)}
+                                >
+                                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirm New Password</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Shield className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  {...field}
+                                  type={showConfirmPassword ? "text" : "password"}
+                                  className="pl-10 pr-10"
+                                  placeholder="Confirm new password"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                >
+                                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button type="submit">
+                        <Shield className="h-4 w-4 mr-2" />
+                        Set Password
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              )}
+                             {/* Success message for set password */}
+               {!hasPassword && passwordSuccess && (
+                 <div className="text-center py-6">
+                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                   <h3 className="text-lg font-semibold text-green-600 mb-2">Password Set Successfully!</h3>
+                   <p className="text-muted-foreground mb-4">Your account is now secured with email/password login.</p>
+                   <div className="text-sm text-muted-foreground">
+                     Redirecting to dashboard...
+                   </div>
+                 </div>
+               )}
+              {/* CHANGE PASSWORD: Only show if hasPassword */}
+              {hasPassword && (
+                <Form {...passwordForm}>
+                  <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
                     <FormField
                       control={passwordForm.control}
-                      name="newPassword"
+                      name="currentPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>New Password</FormLabel>
+                          <FormLabel>Current Password</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Shield className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
-                                type={showNewPassword ? "text" : "password"}
+                                type={showPassword ? "text" : "password"}
                                 className="pl-10 pr-10"
-                                placeholder="Enter new password"
+                                placeholder="Enter current password"
                               />
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                onClick={() => setShowPassword(!showPassword)}
                               >
-                                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                               </Button>
                             </div>
                           </FormControl>
@@ -534,47 +673,77 @@ export default function ProfilePage() {
                         </FormItem>
                       )}
                     />
-
-                    <FormField
-                      control={passwordForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirm New Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Shield className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                {...field}
-                                type={showConfirmPassword ? "text" : "password"}
-                                className="pl-10 pr-10"
-                                placeholder="Confirm new password"
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                              >
-                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </Button>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button type="submit">
-                      <Shield className="h-4 w-4 mr-2" />
-                      Change Password
-                    </Button>
-                  </div>
-                </form>
-              </Form>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <FormField
+                        control={passwordForm.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>New Password</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Shield className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  {...field}
+                                  type={showNewPassword ? "text" : "password"}
+                                  className="pl-10 pr-10"
+                                  placeholder="Enter new password"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowNewPassword(!showNewPassword)}
+                                >
+                                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirm New Password</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Shield className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  {...field}
+                                  type={showConfirmPassword ? "text" : "password"}
+                                  className="pl-10 pr-10"
+                                  placeholder="Confirm new password"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                >
+                                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button type="submit">
+                        <Shield className="h-4 w-4 mr-2" />
+                        Change Password
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

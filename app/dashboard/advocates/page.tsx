@@ -23,8 +23,6 @@ import {
   Eye,
   Pencil,
   Trash2,
-  CheckCircle,
-  XCircle,
 } from 'lucide-react';
 import DashboardStatsCards from '@/components/DashboardStatsCards';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
@@ -38,6 +36,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Eye as EyeIcon } from 'lucide-react';
 
@@ -134,7 +133,8 @@ interface DashboardStats {
 }
 
 export default function Dashboard() {
-  const { data: session, update } = useSession();
+  const { data: session } = useSession();
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     cases: { total: 0, active: 0, closed: 0, pending: 0 },
     clients: { total: 0, active: 0, inactive: 0 },
@@ -158,88 +158,26 @@ export default function Dashboard() {
   const [deleteClient, setDeleteClient] = useState<Client | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [deleteSuccess, setDeleteSuccess] = useState("");
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [passwordLoading, setPasswordLoading] = useState(false);
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [viewDoc, setViewDoc] = useState<{ url: string; name: string; type: string } | null>(null);
-
-  // Password checklist logic
-  const passwordChecks = [
-    {
-      label: 'At least 8 characters',
-      valid: password.length >= 8,
-    },
-    {
-      label: 'At least one uppercase letter',
-      valid: /[A-Z]/.test(password),
-    },
-    {
-      label: 'At least one lowercase letter',
-      valid: /[a-z]/.test(password),
-    },
-    {
-      label: 'At least one number',
-      valid: /\d/.test(password),
-    },
-    {
-      label: 'Passwords match',
-      valid: password.length > 0 && password === confirmPassword,
-    },
-  ];
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
   useEffect(() => {
-    if (session?.user && (session.user as any).needsPassword) {
-      setShowPasswordDialog(true);
-    }
-  }, [session]);
-
-  const handleSetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordError('');
-    if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters long');
-      return;
-    }
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      setPasswordError('Password must contain at least one uppercase letter, one lowercase letter, and one number');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setPasswordError('Passwords do not match');
-      return;
-    }
-    setPasswordLoading(true);
-    try {
-      const res = await fetch('/api/profile/password', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword: '', newPassword: password }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to set password');
+    // Only redirect if user needs to set password and is NOT already on the profile password setup page
+    if (
+      session?.user &&
+      !(session.user as any).hasPassword &&
+      typeof window !== 'undefined'
+    ) {
+      const currentPath = window.location.pathname + window.location.search;
+      const isOnProfileSetup = currentPath.startsWith('/dashboard/advocates/profile') && currentPath.includes('setup=password');
+      if (!isOnProfileSetup) {
+        router.push('/dashboard/advocates/profile?tab=security&setup=password');
       }
-      setPasswordSuccess(true);
-      await update();
-      setTimeout(() => {
-        setShowPasswordDialog(false);
-        setPassword('');
-        setConfirmPassword('');
-        setPasswordSuccess(false);
-      }, 1500);
-    } catch (err: any) {
-      setPasswordError(err.message || 'Failed to set password');
-    } finally {
-      setPasswordLoading(false);
     }
-  };
+  }, [session, router]);
 
   const fetchDashboardData = async () => {
     try {
@@ -546,7 +484,7 @@ export default function Dashboard() {
                                         <TabsTrigger value="financial">Financial</TabsTrigger>
                                         <TabsTrigger value="documents">Additionals</TabsTrigger>
                                       </TabsList>
-                                      <TabsContent value="basic" className="space-y-4">
+                                      <TabsContent value="basic" className="space-y-4 px-4">
                                         <div className="grid grid-cols-2 gap-4">
                                           <div><b>Case Number:</b> {viewCase.caseNumber}</div>
                                           <div><b>Title:</b> {viewCase.title}</div>
@@ -1062,67 +1000,7 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>      
-{/* Password Setup Dialog for Google users */}
-<Dialog open={showPasswordDialog} onOpenChange={() => {}}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Set Your Password</DialogTitle>
-      <DialogDescription>
-        To enable email/password login, please set a password for your account.
-      </DialogDescription>
-    </DialogHeader>
-    {passwordSuccess ? (
-      <div className="text-green-600 text-center py-4">Password set successfully!</div>
-    ) : (
-      <form onSubmit={handleSetPassword} className="space-y-4">
-        <div>
-          <Label htmlFor="new-password">New Password</Label>
-          <Input
-            id="new-password"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-        </div>
-        <div>
-          <Label htmlFor="confirm-password">Confirm Password</Label>
-          <Input
-            id="confirm-password"
-            type="password"
-            value={confirmPassword}
-            onChange={e => setConfirmPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-        </div>
-        {/* Password requirements checklist (moved below confirm password) */}
-        <ul className="mt-2 space-y-1 text-sm">
-          {passwordChecks.map((check, idx) => (
-            <li key={idx} className={check.valid ? 'text-green-600 flex items-center' : 'text-gray-500 flex items-center'}>
-              {check.valid ? (
-                <CheckCircle className="w-4 h-4 mr-2" />
-              ) : (
-                <XCircle className="w-4 h-4 mr-2" />
-              )}
-              {check.label}
-            </li>
-          ))}
-        </ul>
-        {passwordError && <div className="text-red-600 text-sm">{passwordError}</div>}
-        <DialogFooter>
-          <Button type="submit" disabled={passwordLoading}>
-            {passwordLoading ? 'Saving...' : 'Set Password'}
-          </Button>
-        </DialogFooter>
-      </form>
-    )}
-  </DialogContent>
-</Dialog>
+      </div>
 {/* Document Viewer Sheet (scoped to dashboard case view) */}
 <Sheet open={!!viewDoc} onOpenChange={() => setViewDoc(null)}>
   <SheetContent side="bottom" className="h-screen w-screen p-0 m-0">

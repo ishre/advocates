@@ -5,6 +5,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Case from '@/lib/models/Case';
 import User from '@/lib/models/User';
 import { getTenantId } from '@/lib/utils';
+import { deleteCaseFiles } from '@/lib/gcs-cleanup';
 
 export async function GET(
   request: NextRequest,
@@ -212,10 +213,22 @@ export async function DELETE(
       return NextResponse.json({ error: 'Case not found' }, { status: 404 });
     }
 
+    // Delete all files associated with this case from GCS
+    let deletedFilesCount = 0;
+    try {
+      deletedFilesCount = await deleteCaseFiles(id);
+      console.log(`Deleted ${deletedFilesCount} files from GCS for case ${id}`);
+    } catch (gcsError) {
+      console.error('Failed to delete case files from GCS:', gcsError);
+      // Continue with case deletion even if GCS cleanup fails
+    }
+
+    // Delete the case from database
     await Case.findByIdAndDelete(id);
 
     return NextResponse.json({
       message: 'Case deleted successfully',
+      deletedFiles: deletedFilesCount,
     });
   } catch (error) {
     return NextResponse.json(

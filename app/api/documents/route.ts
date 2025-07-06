@@ -8,6 +8,7 @@ import { authOptions } from "@/lib/auth";
 import { Storage } from "@google-cloud/storage";
 import User from "@/lib/models/User";
 import { initializeEmailService } from "@/lib/email-service";
+import { deleteGCSFile, deleteDocumentFiles } from "@/lib/gcs-cleanup";
 
 const bucketName = process.env.GCLOUD_STORAGE_BUCKET!;
 const storage = new Storage(
@@ -138,16 +139,21 @@ export async function DELETE(request: NextRequest) {
         objectName = match[1];
       }
     }
+    
     if (objectName) {
-      const file = bucket.file(objectName);
-      const [exists] = await file.exists();
-      if (exists) {
-        await file.delete();
+      const deleted = await deleteGCSFile(objectName);
+      if (deleted) {
+        console.log(`Deleted GCS file: ${objectName}`);
       }
     } else {
-      // Log but don't fail if GCS delete fails
+      // Try to delete using document name as fallback
+      const deletedCount = await deleteDocumentFiles(caseId, [doc.name]);
+      if (deletedCount > 0) {
+        console.log(`Deleted ${deletedCount} document files for document: ${doc.name}`);
+      }
     }
   } catch (err) {
+    console.error('Failed to delete document from GCS:', err);
     // Log but don't fail if GCS delete fails
   }
   // Send email notification to client and advocate

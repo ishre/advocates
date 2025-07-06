@@ -133,22 +133,29 @@ export const authOptions: NextAuthOptions = {
           const userDoc = await User.findOne({ email: session.user.email }).lean() as IUser | null;
           
           if (userDoc) {
-            // If user has a profileImagePath, generate a fresh signed URL
+            // Add hasPassword to session
+            (session.user as any).hasPassword = !!userDoc.password;
+            // Priority: Custom profile image > Google image > UI Avatar
+            // This ensures user-uploaded images are never overwritten by Google
             if (userDoc.profileImagePath) {
+              // User has uploaded a custom profile image - use it
               try {
                 const freshImageUrl = await generateProfileImageUrl(userDoc.profileImagePath);
                 if (freshImageUrl) {
                   session.user.image = freshImageUrl;
                 } else {
-                  // If signed URL generation fails, generate UI Avatar
-                  session.user.image = `https://ui-avatars.com/api/?name=${encodeURIComponent(userDoc.name)}&background=random&color=fff&size=200`;
+                  // If signed URL generation fails, fall back to Google image or UI Avatar
+                  session.user.image = userDoc.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(userDoc.name)}&background=random&color=fff&size=200`;
                 }
               } catch (urlError) {
-                // Generate UI Avatar if signed URL generation fails
-                session.user.image = `https://ui-avatars.com/api/?name=${encodeURIComponent(userDoc.name)}&background=random&color=fff&size=200`;
+                // Fall back to Google image or UI Avatar
+                session.user.image = userDoc.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(userDoc.name)}&background=random&color=fff&size=200`;
               }
+            } else if (userDoc.image) {
+              // User has a Google profile image but no custom image
+              session.user.image = userDoc.image;
             } else {
-              // No profileImagePath, generate UI Avatar
+              // No custom or Google image, generate UI Avatar
               session.user.image = `https://ui-avatars.com/api/?name=${encodeURIComponent(userDoc.name)}&background=random&color=fff&size=200`;
             }
           } else {
@@ -168,14 +175,27 @@ export const authOptions: NextAuthOptions = {
         const existingUser = await User.findOne({ email: user.email?.toLowerCase() });
         if (existingUser) {
           // If user exists, update their Google OAuth info and mark email as verified
-          await User.findByIdAndUpdate(existingUser._id, {
+          // IMPORTANT: Preserve custom profile images - only use Google image if no custom image exists
+          const updateData: any = {
             googleDriveConnected: true,
             googleDriveToken: account.access_token,
             googleDriveRefreshToken: account.refresh_token,
-            image: user.image, // Update profile image if available
             emailVerified: true, // Google OAuth means email is verified
             oauthProvider: 'google',
-          });
+          };
+          
+          // Only update image if user doesn't have a custom profile image
+          // This prevents Google from overwriting user-uploaded profile images
+          if (!existingUser.profileImagePath && !existingUser.image) {
+            updateData.image = user.image;
+            // eslint-disable-next-line no-console
+            console.log('Using Google profile image for user:', user.email);
+          } else {
+            // eslint-disable-next-line no-console
+            console.log('Preserving custom profile image for user:', user.email);
+          }
+          
+          await User.findByIdAndUpdate(existingUser._id, updateData);
           user.id = existingUser._id.toString();
           user.roles = existingUser.roles;
           (user as any).oauthProvider = 'google';

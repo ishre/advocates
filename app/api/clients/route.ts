@@ -7,6 +7,7 @@ import { initializeEmailService } from '@/lib/email-service';
 import bcrypt from 'bcryptjs';
 import Case from '@/lib/models/Case';
 import { getTenantId } from '@/lib/utils';
+import { deleteClientFiles, deleteCaseFiles } from '@/lib/gcs-cleanup';
 
 export async function GET(request: NextRequest) {
   try {
@@ -263,6 +264,31 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Get all cases associated with this client for GCS cleanup
+    const clientCases = await Case.find({
+      clientId: clientId,
+      advocateId: tenantId,
+    }).select('_id');
+
+    // Delete all files from GCS for each case
+    let totalDeletedFiles = 0;
+    try {
+      // Delete client's profile files
+      const clientFilesDeleted = await deleteClientFiles(clientId);
+      totalDeletedFiles += clientFilesDeleted;
+      console.log(`Deleted ${clientFilesDeleted} client profile files for client ${clientId}`);
+
+      // Delete files for each case
+      for (const caseDoc of clientCases) {
+        const caseFilesDeleted = await deleteCaseFiles(caseDoc._id.toString());
+        totalDeletedFiles += caseFilesDeleted;
+        console.log(`Deleted ${caseFilesDeleted} files for case ${caseDoc._id}`);
+      }
+    } catch (gcsError) {
+      console.error('Failed to delete files from GCS:', gcsError);
+      // Continue with database deletion even if GCS cleanup fails
+    }
+
     // Delete all cases associated with this client
     await Case.deleteMany({
       clientId: clientId,
@@ -309,6 +335,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       message: 'Client and all associated cases deleted successfully',
+      deletedFiles: totalDeletedFiles,
     });
   } catch (error) {
     return NextResponse.json(

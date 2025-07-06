@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { Storage } from '@google-cloud/storage';
+import { deleteGCSFile } from '@/lib/gcs-cleanup';
 import { nanoid } from 'nanoid';
 
 const bucketName = process.env.GCLOUD_STORAGE_BUCKET!;
@@ -130,12 +131,12 @@ export async function DELETE(request: NextRequest) {
     // Delete from GCS if profile image exists
     if (user.profileImagePath) {
       try {
-        const file = bucket.file(user.profileImagePath);
-        const [exists] = await file.exists();
-        if (exists) {
-          await file.delete();
+        const deleted = await deleteGCSFile(user.profileImagePath);
+        if (deleted) {
+          console.log(`Deleted profile image: ${user.profileImagePath}`);
         }
       } catch (gcsError) {
+        console.error('Failed to delete profile image from GCS:', gcsError);
         // Continue with MongoDB update even if GCS deletion fails
       }
     }

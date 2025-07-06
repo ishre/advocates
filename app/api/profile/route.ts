@@ -46,26 +46,39 @@ export async function GET() {
 
     await connectToDatabase();
 
-    const user = await User.findOne({ email: session.user.email }).select('-password');
+    const user = await User.findOne({ email: session.user.email });
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Check if user has a password set
+    const hasPassword = !!user.password;
+    
+    // Remove password from response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
     // Generate fresh signed URL for profile image if it exists
-    if (user.profileImagePath) {
+    if (userResponse.profileImagePath) {
       try {
-        const freshImageUrl = await generateProfileImageUrl(user.profileImagePath);
-        user.image = freshImageUrl;
+        const freshImageUrl = await generateProfileImageUrl(userResponse.profileImagePath);
+        userResponse.image = freshImageUrl;
       } catch (error) {
         // Generate UI Avatar if generation fails
-        user.image = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=200`;
+        const initials = userResponse.name
+          .split(' ')
+          .map((n: string) => n.charAt(0))
+          .join('')
+          .toUpperCase()
+          .slice(0, 2);
+        userResponse.image = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=random&color=fff&size=200`;
         // Also clear the profileImagePath since the file doesn't exist
-        user.profileImagePath = undefined;
+        userResponse.profileImagePath = undefined;
         
         // Clean up the stale reference in the database
         try {
           await User.updateOne(
-            { email: user.email },
+            { email: userResponse.email },
             { $unset: { profileImagePath: "" } }
           );
         } catch (cleanupError) {
@@ -74,10 +87,19 @@ export async function GET() {
       }
     } else {
       // No profile image, generate UI Avatar
-      user.image = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=200`;
+      const initials = userResponse.name
+        .split(' ')
+        .map((n: string) => n.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+      userResponse.image = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=random&color=fff&size=200`;
     }
 
-    return NextResponse.json(user);
+    // Add hasPassword field to response
+    userResponse.hasPassword = hasPassword;
+
+    return NextResponse.json(userResponse);
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

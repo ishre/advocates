@@ -4,19 +4,21 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MoreHorizontal, Eye, Pencil, Trash2, X, Plus, Search, Filter, Upload } from "lucide-react";
+import { Eye, Pencil, Trash2, X, Plus, Search, Filter, Upload, Download, FileText, FileImage, FileVideo, FileAudio, FileArchive, Calendar, Clock, FileX, FileCheck, FileSearch, FilePlus } from "lucide-react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import NewCaseForm from "@/components/forms/NewCaseForm";
-import DocumentUpload from '@/components/forms/DocumentUpload';
+
 import QuickDocumentUpload from '@/components/forms/QuickDocumentUpload';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 interface Case {
   _id: string;
@@ -640,6 +642,45 @@ export default function AllCasesPage() {
     fetchCases();
   };
 
+  // File type icon utility function
+  const getFileIcon = (fileType: string) => {
+    if (fileType.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />;
+    if (fileType.includes('image') || fileType.includes('jpg') || fileType.includes('jpeg') || fileType.includes('png') || fileType.includes('gif')) {
+      return <FileImage className="h-5 w-5 text-green-500" />;
+    }
+    if (fileType.includes('video')) return <FileVideo className="h-5 w-5 text-purple-500" />;
+    if (fileType.includes('audio')) return <FileAudio className="h-5 w-5 text-blue-500" />;
+    if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('tar')) {
+      return <FileArchive className="h-5 w-5 text-orange-500" />;
+    }
+    return <FileText className="h-5 w-5 text-gray-500" />;
+  };
+
+  // Format file size utility
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Format date utility
+  const formatDocumentDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">All Cases</h1>
@@ -703,15 +744,15 @@ export default function AllCasesPage() {
                               <DialogDescription>Complete information for this case.</DialogDescription>
                             </DialogHeader>
                             {viewCase && (
-                              <Tabs defaultValue="basic" className="w-full">
-                                <TabsList className="grid w-full grid-cols-4">
+                              <Tabs defaultValue="basic" className="w-full ">
+                                <TabsList className="grid w-full grid-cols-4 mb-4">
                                   <TabsTrigger value="basic">Basic Info</TabsTrigger>
                                   <TabsTrigger value="client">Client & Court</TabsTrigger>
                                   <TabsTrigger value="financial">Financial</TabsTrigger>
                                   <TabsTrigger value="documents">Additionals</TabsTrigger>
                                 </TabsList>
                                 
-                                <TabsContent value="basic" className="space-y-4">
+                                <TabsContent value="basic" className="space-y-4 px-4">
                                   <div className="grid grid-cols-2 gap-4">
                                     <div><b>Case Number:</b> {viewCase.caseNumber}</div>
                                     <div><b>Title:</b> {viewCase.title}</div>
@@ -732,7 +773,7 @@ export default function AllCasesPage() {
                                   </div>
                                 </TabsContent>
 
-                                <TabsContent value="client" className="space-y-4">
+                                <TabsContent value="client" className="space-y-4 px-4">
                                   <div className="grid grid-cols-2 gap-4">
                                     <div><b>Client Name:</b> {viewCase.clientName}</div>
                                     <div><b>Client Email:</b> {viewCase.clientEmail}</div>
@@ -753,7 +794,7 @@ export default function AllCasesPage() {
                                   </div>
                                 </TabsContent>
 
-                                <TabsContent value="financial" className="space-y-4">
+                                <TabsContent value="financial" className="space-y-4 px-4">
                                   <div className="grid grid-cols-2 gap-4">
                                     <div><b>Total Amount:</b> {viewCase.fees?.currency || 'USD'} {viewCase.fees?.totalAmount || 0}</div>
                                     <div><b>Paid Amount:</b> {viewCase.fees?.currency || 'USD'} {viewCase.fees?.paidAmount || 0}</div>
@@ -762,38 +803,169 @@ export default function AllCasesPage() {
                                   </div>
                                 </TabsContent>
 
-                                <TabsContent value="documents" className="space-y-4">
-                                  <div>
-                                    <b>Documents ({viewCase.documents?.length || 0}):</b>
+                                <TabsContent value="documents" className="space-y-6">
+                                  {/* Documents Section */}
+                                  <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <FileText className="h-5 w-5 text-muted-foreground" />
+                                        <h3 className="text-lg font-semibold">Documents</h3>
+                                        <Badge variant="secondary" className="ml-2">
+                                          {viewCase.documents?.length || 0}
+                                        </Badge>
+                                      </div>
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => handleOpenDocumentUpload(viewCase._id)}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <FilePlus className="h-4 w-4" />
+                                        Upload
+                                      </Button>
+                                    </div>
+
                                     {viewCase.documents && viewCase.documents.length > 0 ? (
-                                      <div className="mt-2 space-y-2">
+                                      <div className="grid gap-3">
                                         {viewCase.documents.map((doc, idx) => (
-                                          <div key={idx} className="text-sm p-2 bg-muted rounded flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                              <Button variant="ghost" size="icon" onClick={() => setViewDoc({ url: doc.url, name: doc.name, type: doc.type })} title="View Document">
-                                                <Eye className="w-5 h-5" />
-                                              </Button>
-                                              <span>{doc.name}</span>
-                                              <span className="ml-2 text-xs text-gray-500">({doc.type})</span>
-                                              <span className="ml-2 text-xs text-gray-400">{new Date(doc.uploadedAt).toLocaleDateString()}</span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                              <Button variant="destructive" size="sm" onClick={() => setDeleteDoc({ caseId: viewCase._id, documentName: doc.name })}>
-                                                Delete
-                                              </Button>
-                                            </div>
-                                          </div>
+                                          <Card key={idx} className="hover:shadow-md transition-shadow">
+                                            <CardContent >
+                                              <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                  {getFileIcon(doc.type)}
+                                                  <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                      <p className="font-medium text-sm truncate" title={doc.name}>
+                                                        {doc.name}
+                                                      </p>
+                                                      <Badge variant="outline" className="text-xs">
+                                                        {doc.type.split('/')[1]?.toUpperCase() || doc.type}
+                                                      </Badge>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                                      <span className="flex items-center gap-1">
+                                                        <Clock className="h-3 w-3" />
+                                                        {formatDocumentDate(doc.uploadedAt)}
+                                                      </span>
+                                                      <span>{formatFileSize(doc.size)}</span>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                <div className="flex items-center gap-1 ml-4">
+                                                  <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    onClick={() => setViewDoc({ url: doc.url, name: doc.name, type: doc.type })}
+                                                    title="View Document"
+                                                    className="h-8 w-8 p-0"
+                                                  >
+                                                    <Eye className="h-4 w-4" />
+                                                  </Button>
+                                                  <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    asChild
+                                                    title="Download Document"
+                                                    className="h-8 w-8 p-0"
+                                                  >
+                                                    <a href={doc.url} target="_blank" rel="noopener noreferrer" download>
+                                                      <Download className="h-4 w-4" />
+                                                    </a>
+                                                  </Button>
+                                                  <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    onClick={() => setDeleteDoc({ caseId: viewCase._id, documentName: doc.name })}
+                                                    title="Delete Document"
+                                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                                  >
+                                                    <Trash2 className="h-4 w-4" />
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            </CardContent>
+                                          </Card>
                                         ))}
                                       </div>
                                     ) : (
-                                      <p className="text-sm text-muted-foreground">No documents uploaded</p>
+                                      <Card className="border-dashed">
+                                        <CardContent className="p-8 text-center">
+                                          <FileX className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                          <h3 className="text-lg font-medium text-muted-foreground mb-2">No Documents</h3>
+                                          <p className="text-sm text-muted-foreground mb-4">
+                                            No documents have been uploaded for this case yet.
+                                          </p>
+                                          <Button 
+                                            onClick={() => handleOpenDocumentUpload(viewCase._id)}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <FilePlus className="h-4 w-4" />
+                                            Upload First Document
+                                          </Button>
+                                        </CardContent>
+                                      </Card>
                                     )}
                                   </div>
-                                  {/* Document Viewer Sheet (scoped to case view) */}
+
+                                  <Separator />
+
+                                  {/* Notes Section */}
+                                  <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                      <FileSearch className="h-5 w-5 text-muted-foreground" />
+                                      <h3 className="text-lg font-semibold">Notes</h3>
+                                      <Badge variant="secondary" className="ml-2">
+                                        {viewCase.notes?.length || 0}
+                                      </Badge>
+                                    </div>
+
+                                    {viewCase.notes && viewCase.notes.length > 0 ? (
+                                      <div className="grid gap-3">
+                                        {viewCase.notes.map((note, idx) => (
+                                          <Card key={idx} className="hover:shadow-md transition-shadow">
+                                            <CardContent className="p-4">
+                                              <div className="flex items-start justify-between">
+                                                <div className="flex-1 min-w-0">
+                                                  <p className="text-sm text-muted-foreground mb-2">
+                                                    {note.content}
+                                                  </p>
+                                                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                                    <span className="flex items-center gap-1">
+                                                      <Calendar className="h-3 w-3" />
+                                                      {formatDocumentDate(note.createdAt)}
+                                                    </span>
+                                                    {note.isPrivate && (
+                                                      <Badge variant="outline" className="text-xs">
+                                                        Private
+                                                      </Badge>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <Card className="border-dashed">
+                                        <CardContent className="p-6 text-center">
+                                          <FileCheck className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                                          <p className="text-sm text-muted-foreground">
+                                            No notes have been added to this case.
+                                          </p>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+                                  </div>
+
+                                  {/* Document Viewer Sheet */}
                                   <Sheet open={!!viewDoc} onOpenChange={() => setViewDoc(null)}>
                                     <SheetContent side="bottom" className="h-screen w-screen p-0 m-0">
-                                      <SheetHeader className="p-4 pb-0 ">
-                                        <SheetTitle>View Document</SheetTitle>
+                                      <SheetHeader className="p-4 pb-0">
+                                        <SheetTitle className="flex items-center gap-2">
+                                          <FileText className="h-5 w-5" />
+                                          {viewDoc?.name}
+                                        </SheetTitle>
                                       </SheetHeader>
                                       {viewDoc && (
                                         <div className="w-full h-full flex flex-col items-center justify-center">
@@ -803,44 +975,59 @@ export default function AllCasesPage() {
                                             <img src={viewDoc.url} alt={viewDoc.name} className="max-h-full max-w-full rounded border" />
                                           ) : (
                                             <div className="flex flex-col items-center justify-center w-full h-full">
-                                              <p className="mb-2">Preview not available for this file type.</p>
-                                              <a href={viewDoc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Download</a>
+                                              <FileX className="h-16 w-16 text-muted-foreground mb-4" />
+                                              <p className="text-lg font-medium mb-2">Preview Not Available</p>
+                                              <p className="text-sm text-muted-foreground mb-4">
+                                                This file type cannot be previewed in the browser.
+                                              </p>
+                                              <Button asChild>
+                                                <a href={viewDoc.url} target="_blank" rel="noopener noreferrer" download>
+                                                  <Download className="h-4 w-4 mr-2" />
+                                                  Download File
+                                                </a>
+                                              </Button>
                                             </div>
                                           )}
                                         </div>
                                       )}
                                     </SheetContent>
                                   </Sheet>
+
                                   {/* Delete Confirmation Dialog */}
                                   <Dialog open={!!deleteDoc} onOpenChange={() => setDeleteDoc(null)}>
                                     <DialogContent>
                                       <DialogHeader>
-                                        <DialogTitle>Delete Document</DialogTitle>
+                                        <DialogTitle className="flex items-center gap-2">
+                                          <Trash2 className="h-5 w-5 text-destructive" />
+                                          Delete Document
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                          This action cannot be undone. The document will be permanently deleted.
+                                        </DialogDescription>
                                       </DialogHeader>
-                                      {deleteDocError && <div className="text-red-600 mb-2">{deleteDocError}</div>}
-                                      <div>Are you sure you want to delete <b>{deleteDoc?.documentName}</b> from this case?</div>
-                                      <div className="flex justify-end gap-2 mt-6">
-                                        <Button variant="outline" onClick={() => setDeleteDoc(null)} disabled={deleteDocLoading}>Cancel</Button>
-                                        <Button variant="destructive" onClick={handleDeleteDoc} disabled={deleteDocLoading}>
-                                          {deleteDocLoading ? 'Deleting...' : 'Delete'}
-                                        </Button>
+                                      {deleteDocError && (
+                                        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+                                          {deleteDocError}
+                                        </div>
+                                      )}
+                                      <div className="space-y-2">
+                                        <p className="text-sm">
+                                          Are you sure you want to delete <span className="font-semibold">{deleteDoc?.documentName}</span>?
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          This document will be permanently removed from the case.
+                                        </p>
                                       </div>
+                                      <DialogFooter>
+                                        <Button variant="outline" onClick={() => setDeleteDoc(null)} disabled={deleteDocLoading}>
+                                          Cancel
+                                        </Button>
+                                        <Button variant="destructive" onClick={handleDeleteDoc} disabled={deleteDocLoading}>
+                                          {deleteDocLoading ? 'Deleting...' : 'Delete Document'}
+                                        </Button>
+                                      </DialogFooter>
                                     </DialogContent>
                                   </Dialog>
-                                  <div>
-                                    <b>Notes ({viewCase.notes?.length || 0}):</b>
-                                    {viewCase.notes && viewCase.notes.length > 0 ? (
-                                      <div className="mt-2 space-y-2">
-                                        {viewCase.notes.map((note, idx) => (
-                                          <div key={idx} className="text-sm p-2 bg-muted rounded">
-                                            {note.content} - {new Date(note.createdAt).toLocaleDateString()}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <p className="text-sm text-muted-foreground">No notes added</p>
-                                    )}
-                                  </div>
                                 </TabsContent>
                               </Tabs>
                             )}
@@ -873,7 +1060,7 @@ export default function AllCasesPage() {
                                   
                                   <TabsContent value="basic" className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="caseNumber">Case Number</Label>
                                         <Input
                                           id="caseNumber"
@@ -881,7 +1068,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, caseNumber: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="title">Title</Label>
                                         <Input
                                           id="title"
@@ -889,7 +1076,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, title: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="caseType">Case Type</Label>
                                         <Select value={editForm.caseType ?? undefined} onValueChange={val => setEditForm({ ...editForm, caseType: val as Case['caseType'] })}>
                                           <SelectTrigger>
@@ -905,7 +1092,7 @@ export default function AllCasesPage() {
                                           </SelectContent>
                                         </Select>
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="status">Status</Label>
                                         <Select value={editForm.status ?? undefined} onValueChange={val => setEditForm({ ...editForm, status: val as Case['status'] })}>
                                           <SelectTrigger>
@@ -921,7 +1108,7 @@ export default function AllCasesPage() {
                                           </SelectContent>
                                         </Select>
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="priority">Priority</Label>
                                         <Select value={editForm.priority ?? undefined} onValueChange={val => setEditForm({ ...editForm, priority: val as Case['priority'] })}>
                                           <SelectTrigger>
@@ -935,7 +1122,7 @@ export default function AllCasesPage() {
                                           </SelectContent>
                                         </Select>
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="stage">Stage</Label>
                                         <Select value={editForm.stage || 'not_set'} onValueChange={val => setEditForm({ ...editForm, stage: val === 'not_set' ? '' : val })}>
                                           <SelectTrigger>
@@ -953,7 +1140,7 @@ export default function AllCasesPage() {
                                           </SelectContent>
                                         </Select>
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="year">Year</Label>
                                         <Input
                                           id="year"
@@ -963,7 +1150,7 @@ export default function AllCasesPage() {
                                         />
                                       </div>
                                     </div>
-                                    <div>
+                                    <div className="space-y-2">
                                       <Label htmlFor="description">Description</Label>
                                       <Textarea
                                         id="description"
@@ -972,7 +1159,7 @@ export default function AllCasesPage() {
                                         rows={3}
                                       />
                                     </div>
-                                    <div>
+                                    <div className="space-y-2">
                                       <Label htmlFor="particulars">Particulars</Label>
                                       <Textarea
                                         id="particulars"
@@ -985,7 +1172,7 @@ export default function AllCasesPage() {
 
                                   <TabsContent value="client" className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="clientName">Client Name</Label>
                                         <Input
                                           id="clientName"
@@ -993,7 +1180,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, clientName: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="clientEmail">Client Email</Label>
                                         <Input
                                           id="clientEmail"
@@ -1002,7 +1189,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, clientEmail: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2"  >
                                         <Label htmlFor="clientPhone">Client Phone</Label>
                                         <Input
                                           id="clientPhone"
@@ -1010,7 +1197,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, clientPhone: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="courtName">Court Name</Label>
                                         <Input
                                           id="courtName"
@@ -1018,7 +1205,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, courtName: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="courtLocation">Court Location</Label>
                                         <Input
                                           id="courtLocation"
@@ -1026,7 +1213,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, courtLocation: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="judgeName">Judge Name</Label>
                                         <Input
                                           id="judgeName"
@@ -1034,7 +1221,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, judgeName: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="opposingParty">Opposing Party</Label>
                                         <Input
                                           id="opposingParty"
@@ -1042,7 +1229,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, opposingParty: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="opposingLawyer">Opposing Lawyer</Label>
                                         <Input
                                           id="opposingLawyer"
@@ -1055,7 +1242,7 @@ export default function AllCasesPage() {
 
                                   <TabsContent value="financial" className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="totalAmount">Total Amount</Label>
                                         <Input
                                           id="totalAmount"
@@ -1074,7 +1261,7 @@ export default function AllCasesPage() {
                                           })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="paidAmount">Paid Amount</Label>
                                         <Input
                                           id="paidAmount"
@@ -1093,7 +1280,7 @@ export default function AllCasesPage() {
                                           })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="pendingAmount">Pending Amount</Label>
                                         <Input
                                           id="pendingAmount"
@@ -1103,7 +1290,7 @@ export default function AllCasesPage() {
                                           disabled
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="currency">Currency</Label>
                                         <Select value={editForm.fees?.currency ?? undefined} onValueChange={val => setEditForm({
                                           ...editForm,
@@ -1131,7 +1318,7 @@ export default function AllCasesPage() {
 
                                   <TabsContent value="dates" className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="registrationDate">Registration Date</Label>
                                         <Input
                                           id="registrationDate"
@@ -1140,7 +1327,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, registrationDate: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2"  >
                                         <Label htmlFor="filingDate">Filing Date</Label>
                                         <Input
                                           id="filingDate"
@@ -1149,7 +1336,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, filingDate: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="previousDate">Previous Date</Label>
                                         <Input
                                           id="previousDate"
@@ -1158,7 +1345,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, previousDate: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="nextHearingDate">Next Hearing Date</Label>
                                         <Input
                                           id="nextHearingDate"
@@ -1167,7 +1354,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, nextHearingDate: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="deadlineDate">Deadline Date</Label>
                                         <Input
                                           id="deadlineDate"
@@ -1176,7 +1363,7 @@ export default function AllCasesPage() {
                                           onChange={e => setEditForm({ ...editForm, deadlineDate: e.target.value })}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="space-y-2">
                                         <Label htmlFor="closedDate">Closed Date</Label>
                                         <Input
                                           id="closedDate"
